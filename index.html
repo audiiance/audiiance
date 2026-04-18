@@ -32,41 +32,35 @@
     }
   </style>
 </head>
+
 <body>
   <div class="box">
     <h1>Audiiance</h1>
     <p>Enter a website URL</p>
-    <input placeholder="https://example.com" />
+
+    <input id="urlInput" placeholder="https://example.com" />
     <br/>
-    <script>
-function startAnalysis() {
-  const input = document.querySelector("input").value;
 
-  if (!input) {
-    alert("Please enter a URL");
-    return;
-  }
-
-  const button = document.querySelector("button");
-  button.innerText = "Analyzing...";
-  button.disabled = true;
-
-  setTimeout(() => {
-    window.location.href = "/workspace.html?url=" + encodeURIComponent(input);
-  }, 1500);
-}
-</script>
+    <button onclick="startAnalysis()">Build Blueprint</button>
   </div>
-<script>
-function startAnalysis() {
-  const button = document.querySelector("button");
-  button.innerText = "Analyzing...";
-  button.disabled = true;
 
-  setTimeout(() => {
-    window.location.href = "/workspace.html";
-  }, 2000); // slightly longer so you feel it
-}
-</script>
+  <script>
+    function startAnalysis() {
+      const input = document.getElementById("urlInput").value;
+
+      if (!input) {
+        alert("Please enter a URL");
+        return;
+      }
+
+      const button = document.querySelector("button");
+      button.innerText = "Analyzing...";
+      button.disabled = true;
+
+      setTimeout(() => {
+        window.location.href = "/workspace.html?url=" + encodeURIComponent(input);
+      }, 1500);
+    }
+  </script>
 </body>
 </html>
