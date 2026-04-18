@@ -20,5 +20,13 @@
     <h1>Blueprint Initialized</h1>
     <p>Now mapping your website structure...</p>
   </div>
+  <script>
+const params = new URLSearchParams(window.location.search);
+const url = params.get("url");
+
+if (url) {
+  document.querySelector("p").innerText = "Analyzing: " + url;
+}
+</script>
 </body>
 </html>
