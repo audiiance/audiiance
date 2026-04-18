@@ -38,7 +38,18 @@
     <p>Enter a website URL</p>
     <input placeholder="https://example.com" />
     <br/>
-    <button>Build Blueprint</button>
+    <button onclick="startAnalysis()">Build Blueprint</button>
   </div>
+  <script>
+function startAnalysis() {
+  const button = document.querySelector("button");
+  button.innerText = "Analyzing...";
+  button.disabled = true;
+
+  setTimeout(() => {
+    window.location.href = "/workspace.html";
+  }, 1500);
+}
+</script>
 </body>
 </html>
