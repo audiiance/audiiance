@@ -40,7 +40,7 @@
     <br/>
     <button onclick="startAnalysis()">Build Blueprint</button>
   </div>
-  <script>
+<script>
 function startAnalysis() {
   const button = document.querySelector("button");
   button.innerText = "Analyzing...";
@@ -48,7 +48,7 @@ function startAnalysis() {
 
   setTimeout(() => {
     window.location.href = "/workspace.html";
-  }, 1500);
+  }, 2000); // slightly longer so you feel it
 }
 </script>
 </body>
