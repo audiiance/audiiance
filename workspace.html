@@ -305,65 +305,19 @@
         <div class="summary">
           <div class="card">
             <h3>Pages Found</h3>
-            <p>6 pages detected in this demo workspace.</p>
+            <p id="pagesFound">Loading...</p>
           </div>
           <div class="card">
             <h3>Issues Found</h3>
-            <p>1 broken page and 2 opportunity pages flagged.</p>
+            <p id="issuesFound">Loading...</p>
           </div>
           <div class="card">
             <h3>Tracking Focus</h3>
-            <p>Pricing and checkout look like strong GA4 event candidates.</p>
+            <p id="trackingFocus">Loading...</p>
           </div>
         </div>
 
-        <div class="canvas">
-          <div class="line" style="top: 95px; left: 220px; width: 160px;"></div>
-          <div class="line" style="top: 95px; left: 540px; width: 160px;"></div>
-          <div class="line" style="top: 95px; left: 860px; width: 120px;"></div>
-
-          <div class="node green"
-               style="top: 50px; left: 40px;"
-               onclick="selectNode('Homepage','/','Healthy','Page View','Main entry page. Good starting point for primary journey mapping.','green')">
-            <h3>Homepage</h3>
-            <p>/</p>
-          </div>
-
-          <div class="node green"
-               style="top: 50px; left: 380px;"
-               onclick="selectNode('Products','/products','Healthy','view_item_list','This looks like a core browsing page. Good place to track product exploration.','green')">
-            <h3>Products</h3>
-            <p>/products</p>
-          </div>
-
-          <div class="node yellow"
-               style="top: 50px; left: 700px;"
-               onclick="selectNode('Pricing','/pricing','Opportunity','view_pricing','Strong decision-stage page. Track page view, CTA clicks, and downstream conversion intent.','yellow')">
-            <h3>Pricing</h3>
-            <p>/pricing</p>
-          </div>
-
-          <div class="node red"
-               style="top: 50px; left: 980px;"
-               onclick="selectNode('404 Error','/old-page','Broken','error_404_view','This page appears broken or outdated. Investigate traffic sources and fix internal links.','red')">
-            <h3>404 Error</h3>
-            <p>/old-page</p>
-          </div>
-
-          <div class="node green"
-               style="top: 260px; left: 220px;"
-               onclick="selectNode('Contact','/contact','Healthy','generate_lead','Contact page is a likely conversion touchpoint. Track form starts and submissions.','green')">
-            <h3>Contact</h3>
-            <p>/contact</p>
-          </div>
-
-          <div class="node yellow"
-               style="top: 260px; left: 620px;"
-               onclick="selectNode('Checkout','/checkout','Opportunity','begin_checkout','Checkout is high value. Track step progression and abandonment points.','yellow')">
-            <h3>Checkout</h3>
-            <p>/checkout</p>
-          </div>
-        </div>
+        <div class="canvas" id="canvas"></div>
       </div>
 
       <div class="panel">
@@ -371,31 +325,29 @@
 
         <div class="panel-section">
           <div class="label">Page Name</div>
-          <div class="value" id="panelName">Pricing</div>
+          <div class="value" id="panelName">Loading...</div>
         </div>
 
         <div class="panel-section">
           <div class="label">Path</div>
-          <div class="value" id="panelPath">/pricing</div>
+          <div class="value" id="panelPath">Loading...</div>
         </div>
 
         <div class="panel-section">
           <div class="label">Status</div>
           <div class="value">
-            <span class="status-badge status-yellow" id="panelStatus">Opportunity</span>
+            <span class="status-badge" id="panelStatus">Loading...</span>
           </div>
         </div>
 
         <div class="panel-section">
           <div class="label">Suggested Event</div>
-          <div class="value" id="panelEvent">view_pricing</div>
+          <div class="value" id="panelEvent">Loading...</div>
         </div>
 
         <div class="panel-section">
           <div class="label">Notes</div>
-          <div class="value" id="panelNotes">
-            Strong decision-stage page. Track page view, CTA clicks, and downstream conversion intent.
-          </div>
+          <div class="value" id="panelNotes">Loading...</div>
         </div>
       </div>
     </div>
@@ -403,17 +355,131 @@
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const url = params.get("url");
+    const url = params.get("url") || "example.com";
 
-    if (url) {
-      document.getElementById("statusText").innerText = "Analyzing: " + url;
-      document.getElementById("resultUrl").innerText = "Website: " + url;
+    document.getElementById("statusText").innerText = "Analyzing: " + url;
+    document.getElementById("resultUrl").innerText = "Website: " + url;
+
+    const siteTypes = {
+      ecommerce: {
+        summary: {
+          pages: "7 pages detected in this ecommerce-style demo workspace.",
+          issues: "1 broken page and 2 conversion opportunity pages flagged.",
+          tracking: "Products, cart, and checkout are the key GA4 event opportunities."
+        },
+        defaultNode: {
+          name: "Pricing",
+          path: "/pricing",
+          status: "Opportunity",
+          eventName: "view_pricing",
+          notes: "Strong decision-stage page. Track page view, CTA clicks, and downstream conversion intent.",
+          color: "yellow"
+        },
+        nodes: [
+          { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry page for traffic and journey mapping.", color: "green", top: 50, left: 40 },
+          { name: "Products", path: "/products", status: "Healthy", eventName: "view_item_list", notes: "Track product listing visibility and engagement.", color: "green", top: 50, left: 320 },
+          { name: "Pricing", path: "/pricing", status: "Opportunity", eventName: "view_pricing", notes: "Strong decision-stage page. Track page view, CTA clicks, and downstream conversion intent.", color: "yellow", top: 50, left: 600 },
+          { name: "404 Error", path: "/old-page", status: "Broken", eventName: "error_404_view", notes: "Broken or outdated page. Investigate internal links and traffic sources.", color: "red", top: 50, left: 880 },
+          { name: "Cart", path: "/cart", status: "Opportunity", eventName: "view_cart", notes: "Track cart views and movement toward purchase.", color: "yellow", top: 260, left: 220 },
+          { name: "Checkout", path: "/checkout", status: "Opportunity", eventName: "begin_checkout", notes: "Critical revenue page. Track progression and abandonment.", color: "yellow", top: 260, left: 520 },
+          { name: "Contact", path: "/contact", status: "Healthy", eventName: "generate_lead", notes: "Useful support or lead page. Track form starts and submissions.", color: "green", top: 260, left: 840 }
+        ],
+        lines: [
+          { top: 95, left: 220, width: 100 },
+          { top: 95, left: 500, width: 100 },
+          { top: 95, left: 780, width: 100 },
+          { top: 305, left: 400, width: 120 },
+          { top: 305, left: 700, width: 140 }
+        ]
+      },
+
+      leadgen: {
+        summary: {
+          pages: "6 pages detected in this lead-generation demo workspace.",
+          issues: "1 broken page and 2 high-intent opportunity pages flagged.",
+          tracking: "Services, contact, and thank-you pages are your main measurement focus."
+        },
+        defaultNode: {
+          name: "Services",
+          path: "/services",
+          status: "Opportunity",
+          eventName: "view_services",
+          notes: "Core decision page for lead-gen sites. Track service page views and CTA clicks.",
+          color: "yellow"
+        },
+        nodes: [
+          { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Primary landing page for brand entry and top-level messaging.", color: "green", top: 50, left: 60 },
+          { name: "About", path: "/about", status: "Healthy", eventName: "view_about", notes: "Trust-building page. Monitor engagement depth.", color: "green", top: 50, left: 340 },
+          { name: "Services", path: "/services", status: "Opportunity", eventName: "view_services", notes: "Core decision page for lead-gen sites. Track service page views and CTA clicks.", color: "yellow", top: 50, left: 620 },
+          { name: "404 Error", path: "/old-offer", status: "Broken", eventName: "error_404_view", notes: "Broken page likely tied to old campaigns or navigation.", color: "red", top: 50, left: 900 },
+          { name: "Contact", path: "/contact", status: "Opportunity", eventName: "form_start", notes: "High-intent page. Track form starts and completions.", color: "yellow", top: 260, left: 280 },
+          { name: "Thank You", path: "/thank-you", status: "Healthy", eventName: "generate_lead", notes: "Confirmation page. Strong conversion marker for lead tracking.", color: "green", top: 260, left: 680 }
+        ],
+        lines: [
+          { top: 95, left: 240, width: 100 },
+          { top: 95, left: 520, width: 100 },
+          { top: 95, left: 800, width: 100 },
+          { top: 305, left: 460, width: 220 }
+        ]
+      },
+
+      content: {
+        summary: {
+          pages: "6 pages detected in this content-style demo workspace.",
+          issues: "1 broken page and 2 engagement opportunity pages flagged.",
+          tracking: "Blog, article, and subscribe pages are the strongest event candidates."
+        },
+        defaultNode: {
+          name: "Blog",
+          path: "/blog",
+          status: "Opportunity",
+          eventName: "view_blog_index",
+          notes: "Track content browsing and progression to article pages.",
+          color: "yellow"
+        },
+        nodes: [
+          { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry point and content discovery start.", color: "green", top: 50, left: 60 },
+          { name: "Blog", path: "/blog", status: "Opportunity", eventName: "view_blog_index", notes: "Track content browsing and progression to article pages.", color: "yellow", top: 50, left: 340 },
+          { name: "Article", path: "/blog/how-to-scale", status: "Opportunity", eventName: "view_article", notes: "High-engagement page. Track scroll depth and CTA interactions.", color: "yellow", top: 50, left: 620 },
+          { name: "404 Error", path: "/old-post", status: "Broken", eventName: "error_404_view", notes: "Outdated content URL. Fix internal linking or redirect it.", color: "red", top: 50, left: 900 },
+          { name: "Subscribe", path: "/subscribe", status: "Healthy", eventName: "sign_up", notes: "Email capture page. Track form submission and opt-in success.", color: "green", top: 260, left: 280 },
+          { name: "Contact", path: "/contact", status: "Healthy", eventName: "generate_lead", notes: "Secondary conversion point. Track form starts and completions.", color: "green", top: 260, left: 680 }
+        ],
+        lines: [
+          { top: 95, left: 240, width: 100 },
+          { top: 95, left: 520, width: 100 },
+          { top: 95, left: 800, width: 100 },
+          { top: 305, left: 460, width: 220 }
+        ]
+      }
+    };
+
+    function detectSiteType(rawUrl) {
+      const value = rawUrl.toLowerCase();
+
+      if (
+        value.includes("shop") ||
+        value.includes("store") ||
+        value.includes("cart") ||
+        value.includes("checkout") ||
+        value.includes("nike") ||
+        value.includes("adidas")
+      ) {
+        return "ecommerce";
+      }
+
+      if (
+        value.includes("blog") ||
+        value.includes("news") ||
+        value.includes("media") ||
+        value.includes("mag") ||
+        value.includes("article")
+      ) {
+        return "content";
+      }
+
+      return "leadgen";
     }
-
-    setTimeout(() => {
-      document.getElementById("loadingScreen").style.display = "none";
-      document.getElementById("resultsScreen").style.display = "flex";
-    }, 2000);
 
     function selectNode(name, path, status, eventName, notes, color) {
       document.getElementById("panelName").innerText = name;
@@ -433,6 +499,68 @@
         statusEl.classList.add("status-red");
       }
     }
+
+    function renderWorkspace(type) {
+      const config = siteTypes[type];
+      const canvas = document.getElementById("canvas");
+
+      document.getElementById("pagesFound").innerText = config.summary.pages;
+      document.getElementById("issuesFound").innerText = config.summary.issues;
+      document.getElementById("trackingFocus").innerText = config.summary.tracking;
+
+      canvas.innerHTML = "";
+
+      config.lines.forEach(line => {
+        const lineEl = document.createElement("div");
+        lineEl.className = "line";
+        lineEl.style.top = line.top + "px";
+        lineEl.style.left = line.left + "px";
+        lineEl.style.width = line.width + "px";
+        canvas.appendChild(lineEl);
+      });
+
+      config.nodes.forEach(node => {
+        const nodeEl = document.createElement("div");
+        nodeEl.className = "node " + node.color;
+        nodeEl.style.top = node.top + "px";
+        nodeEl.style.left = node.left + "px";
+
+        nodeEl.innerHTML = `
+          <h3>${node.name}</h3>
+          <p>${node.path}</p>
+        `;
+
+        nodeEl.onclick = function () {
+          selectNode(
+            node.name,
+            node.path,
+            node.status,
+            node.eventName,
+            node.notes,
+            node.color
+          );
+        };
+
+        canvas.appendChild(nodeEl);
+      });
+
+      selectNode(
+        config.defaultNode.name,
+        config.defaultNode.path,
+        config.defaultNode.status,
+        config.defaultNode.eventName,
+        config.defaultNode.notes,
+        config.defaultNode.color
+      );
+    }
+
+    const detectedType = detectSiteType(url);
+    renderWorkspace(detectedType);
+
+    setTimeout(() => {
+      document.getElementById("loadingScreen").style.display = "none";
+      document.getElementById("resultsScreen").style.display = "flex";
+    }, 2000);
   </script>
 </body>
 </html>
