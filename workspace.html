@@ -175,6 +175,7 @@
       overflow: hidden;
       padding: 30px;
       box-sizing: border-box;
+      margin-bottom: 24px;
     }
 
     .line {
@@ -234,6 +235,85 @@
 
     .node.red {
       border-color: #ef4444;
+    }
+
+    .issues-section {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .issues-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid #1f2937;
+    }
+
+    .issues-header h3 {
+      margin: 0 0 6px 0;
+      font-size: 20px;
+    }
+
+    .issues-header p {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .issues-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .issues-table th,
+    .issues-table td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid #1f2937;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    .issues-table th {
+      color: #94a3b8;
+      font-weight: 600;
+      background: #0b1220;
+    }
+
+    .issues-table tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .issues-table tr:hover {
+      background: rgba(34, 211, 238, 0.06);
+    }
+
+    .issues-table tr.selected-row {
+      background: rgba(34, 211, 238, 0.12);
+    }
+
+    .issue-badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .issue-green {
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+    }
+
+    .issue-yellow {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+    }
+
+    .issue-red {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
     }
 
     .panel {
@@ -361,6 +441,25 @@
         <div class="filters" id="filters"></div>
 
         <div class="canvas" id="canvas"></div>
+
+        <div class="issues-section">
+          <div class="issues-header">
+            <h3>Issues & Opportunities</h3>
+            <p>Click any row to inspect the page and sync the right-side detail panel.</p>
+          </div>
+
+          <table class="issues-table">
+            <thead>
+              <tr>
+                <th>Page</th>
+                <th>Path</th>
+                <th>Status</th>
+                <th>Suggested Event</th>
+              </tr>
+            </thead>
+            <tbody id="issuesTableBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="panel">
@@ -512,6 +611,18 @@
       return node.name + "-" + node.path;
     }
 
+    function statusClass(color) {
+      if (color === "green") return "status-green";
+      if (color === "yellow") return "status-yellow";
+      return "status-red";
+    }
+
+    function issueClass(color) {
+      if (color === "green") return "issue-green";
+      if (color === "yellow") return "issue-yellow";
+      return "issue-red";
+    }
+
     function selectNode(node) {
       selectedNodeKey = getNodeKey(node);
 
@@ -522,17 +633,10 @@
 
       const statusEl = document.getElementById("panelStatus");
       statusEl.innerText = node.status;
-      statusEl.className = "status-badge";
-
-      if (node.color === "green") {
-        statusEl.classList.add("status-green");
-      } else if (node.color === "yellow") {
-        statusEl.classList.add("status-yellow");
-      } else if (node.color === "red") {
-        statusEl.classList.add("status-red");
-      }
+      statusEl.className = "status-badge " + statusClass(node.color);
 
       renderCanvas();
+      renderIssuesTable();
     }
 
     function getCounts(nodes) {
@@ -565,6 +669,7 @@
           currentFilter = filter.key;
           renderFilters();
           renderCanvas();
+          renderIssuesTable();
         };
         filtersEl.appendChild(btn);
       });
@@ -585,12 +690,9 @@
       currentLines.forEach(line => {
         const lineEl = document.createElement("div");
         lineEl.className = "line";
-
-        const anyVisibleNodes = currentFilter === "all";
-        if (!anyVisibleNodes) {
+        if (currentFilter !== "all") {
           lineEl.classList.add("hidden");
         }
-
         lineEl.style.top = line.top + "px";
         lineEl.style.left = line.left + "px";
         lineEl.style.width = line.width + "px";
@@ -625,6 +727,47 @@
       });
     }
 
+    function renderIssuesTable() {
+      const body = document.getElementById("issuesTableBody");
+      body.innerHTML = "";
+
+      const visibleNodes = currentNodes.filter(node => {
+        if (currentFilter === "all") {
+          return node.color !== "green";
+        }
+        return shouldShowNode(node);
+      });
+
+      visibleNodes.forEach(node => {
+        const row = document.createElement("tr");
+
+        if (selectedNodeKey === getNodeKey(node)) {
+          row.classList.add("selected-row");
+        }
+
+        row.onclick = function () {
+          selectNode(node);
+        };
+
+        row.innerHTML = `
+          <td>${node.name}</td>
+          <td>${node.path}</td>
+          <td><span class="issue-badge ${issueClass(node.color)}">${node.status}</span></td>
+          <td>${node.eventName}</td>
+        `;
+
+        body.appendChild(row);
+      });
+
+      if (visibleNodes.length === 0) {
+        const emptyRow = document.createElement("tr");
+        emptyRow.innerHTML = `
+          <td colspan="4" style="color:#94a3b8;">No rows match the current filter.</td>
+        `;
+        body.appendChild(emptyRow);
+      }
+    }
+
     function renderWorkspace(type) {
       const config = siteTypes[type];
 
@@ -639,6 +782,7 @@
       selectNode(defaultNode);
       renderFilters();
       renderCanvas();
+      renderIssuesTable();
     }
 
     const detectedType = detectSiteType(url);
