@@ -4,22 +4,218 @@
   <title>Audiiance - Workspace</title>
   <style>
     body {
+      margin: 0;
       background: #0f172a;
       color: white;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
+    }
+
+    .loading-screen,
+    .results-screen {
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
       text-align: center;
+      padding: 40px;
+      box-sizing: border-box;
+    }
+
+    .results-screen {
+      display: none;
+      align-items: flex-start;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 12px;
+      font-size: 48px;
+    }
+
+    p {
+      font-size: 24px;
+      color: #cbd5e1;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: #1e293b;
+      color: #93c5fd;
+      font-size: 14px;
+    }
+
+    .canvas {
+      position: relative;
+      width: 100%;
+      min-height: 600px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 20px;
+      overflow: hidden;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    .node {
+      position: absolute;
+      min-width: 180px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .node h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: white;
+    }
+
+    .node p {
+      margin: 0;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .node.green {
+      border-color: #22c55e;
+    }
+
+    .node.yellow {
+      border-color: #f59e0b;
+    }
+
+    .node.red {
+      border-color: #ef4444;
+    }
+
+    .line {
+      position: absolute;
+      height: 2px;
+      background: #334155;
+      transform-origin: left center;
+    }
+
+    .summary {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .card h4 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: white;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
     }
   </style>
 </head>
-
 <body>
-  <div>
-    <h1>Blueprint Initialized</h1>
-    <p id="statusText">Preparing analysis...</p>
+  <div class="loading-screen" id="loadingScreen">
+    <div>
+      <h1>Blueprint Initialized</h1>
+      <p id="statusText">Preparing analysis...</p>
+    </div>
+  </div>
+
+  <div class="results-screen" id="resultsScreen">
+    <div class="container">
+      <div class="topbar">
+        <div>
+          <h1 style="font-size: 36px; margin: 0 0 8px 0;">Visual Sitemap Preview</h1>
+          <p id="resultUrl" style="font-size: 18px; margin: 0;">Website: loading...</p>
+        </div>
+        <div class="tag">MVP Demo Results</div>
+      </div>
+
+      <div class="canvas">
+        <!-- lines -->
+        <div class="line" style="top: 95px; left: 220px; width: 160px;"></div>
+        <div class="line" style="top: 95px; left: 540px; width: 160px;"></div>
+        <div class="line" style="top: 95px; left: 860px; width: 120px;"></div>
+
+        <!-- nodes -->
+        <div class="node green" style="top: 50px; left: 40px;">
+          <h3>Homepage</h3>
+          <p>/</p>
+        </div>
+
+        <div class="node green" style="top: 50px; left: 380px;">
+          <h3>Products</h3>
+          <p>/products</p>
+        </div>
+
+        <div class="node yellow" style="top: 50px; left: 700px;">
+          <h3>Pricing</h3>
+          <p>/pricing</p>
+        </div>
+
+        <div class="node red" style="top: 50px; left: 980px;">
+          <h3>404 Error</h3>
+          <p>/old-page</p>
+        </div>
+
+        <div class="node green" style="top: 260px; left: 220px;">
+          <h3>Contact</h3>
+          <p>/contact</p>
+        </div>
+
+        <div class="node yellow" style="top: 260px; left: 620px;">
+          <h3>Checkout</h3>
+          <p>/checkout</p>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="card">
+          <h4>Pages Found</h4>
+          <p>6 pages detected in this demo sitemap view.</p>
+        </div>
+
+        <div class="card">
+          <h4>Issues Found</h4>
+          <p>1 broken page and 2 pages flagged as opportunity areas.</p>
+        </div>
+
+        <div class="card">
+          <h4>Tracking Opportunity</h4>
+          <p>Pricing and checkout look like strong candidates for GA4 event mapping.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -28,7 +224,13 @@
 
     if (url) {
       document.getElementById("statusText").innerText = "Analyzing: " + url;
+      document.getElementById("resultUrl").innerText = "Website: " + url;
     }
+
+    setTimeout(() => {
+      document.getElementById("loadingScreen").style.display = "none";
+      document.getElementById("resultsScreen").style.display = "flex";
+    }, 2000);
   </script>
 </body>
 </html>
