@@ -136,6 +136,36 @@
       line-height: 1.5;
     }
 
+    .filters {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .filter-btn {
+      background: #111827;
+      color: #cbd5e1;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: #22d3ee;
+      color: white;
+    }
+
+    .filter-btn.active {
+      background: #22d3ee;
+      color: #0f172a;
+      border-color: #22d3ee;
+      font-weight: bold;
+    }
+
     .canvas {
       position: relative;
       min-height: 620px;
@@ -152,6 +182,7 @@
       height: 2px;
       background: #334155;
       transform-origin: left center;
+      transition: opacity 0.15s ease;
     }
 
     .node {
@@ -163,12 +194,22 @@
       border: 1px solid #334155;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
       cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
     }
 
     .node:hover {
       transform: translateY(-2px);
       border-color: #22d3ee;
+    }
+
+    .node.selected {
+      box-shadow: 0 0 0 2px #22d3ee, 0 10px 25px rgba(0, 0, 0, 0.25);
+      border-color: #22d3ee;
+    }
+
+    .node.hidden,
+    .line.hidden {
+      opacity: 0.15;
     }
 
     .node h3 {
@@ -317,6 +358,8 @@
           </div>
         </div>
 
+        <div class="filters" id="filters"></div>
+
         <div class="canvas" id="canvas"></div>
       </div>
 
@@ -360,21 +403,19 @@
     document.getElementById("statusText").innerText = "Analyzing: " + url;
     document.getElementById("resultUrl").innerText = "Website: " + url;
 
+    let currentFilter = "all";
+    let currentNodes = [];
+    let currentLines = [];
+    let selectedNodeKey = "";
+
     const siteTypes = {
       ecommerce: {
         summary: {
           pages: "7 pages detected in this ecommerce-style demo workspace.",
-          issues: "1 broken page and 2 conversion opportunity pages flagged.",
-          tracking: "Products, cart, and checkout are the key GA4 event opportunities."
+          issues: "1 broken page and 3 conversion opportunity pages flagged.",
+          tracking: "Products, pricing, cart, and checkout are the key GA4 event opportunities."
         },
-        defaultNode: {
-          name: "Pricing",
-          path: "/pricing",
-          status: "Opportunity",
-          eventName: "view_pricing",
-          notes: "Strong decision-stage page. Track page view, CTA clicks, and downstream conversion intent.",
-          color: "yellow"
-        },
+        defaultNodeKey: "Pricing-/pricing",
         nodes: [
           { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry page for traffic and journey mapping.", color: "green", top: 50, left: 40 },
           { name: "Products", path: "/products", status: "Healthy", eventName: "view_item_list", notes: "Track product listing visibility and engagement.", color: "green", top: 50, left: 320 },
@@ -399,14 +440,7 @@
           issues: "1 broken page and 2 high-intent opportunity pages flagged.",
           tracking: "Services, contact, and thank-you pages are your main measurement focus."
         },
-        defaultNode: {
-          name: "Services",
-          path: "/services",
-          status: "Opportunity",
-          eventName: "view_services",
-          notes: "Core decision page for lead-gen sites. Track service page views and CTA clicks.",
-          color: "yellow"
-        },
+        defaultNodeKey: "Services-/services",
         nodes: [
           { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Primary landing page for brand entry and top-level messaging.", color: "green", top: 50, left: 60 },
           { name: "About", path: "/about", status: "Healthy", eventName: "view_about", notes: "Trust-building page. Monitor engagement depth.", color: "green", top: 50, left: 340 },
@@ -429,14 +463,7 @@
           issues: "1 broken page and 2 engagement opportunity pages flagged.",
           tracking: "Blog, article, and subscribe pages are the strongest event candidates."
         },
-        defaultNode: {
-          name: "Blog",
-          path: "/blog",
-          status: "Opportunity",
-          eventName: "view_blog_index",
-          notes: "Track content browsing and progression to article pages.",
-          color: "yellow"
-        },
+        defaultNodeKey: "Blog-/blog",
         nodes: [
           { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry point and content discovery start.", color: "green", top: 50, left: 60 },
           { name: "Blog", path: "/blog", status: "Opportunity", eventName: "view_blog_index", notes: "Track content browsing and progression to article pages.", color: "yellow", top: 50, left: 340 },
@@ -481,47 +508,107 @@
       return "leadgen";
     }
 
-    function selectNode(name, path, status, eventName, notes, color) {
-      document.getElementById("panelName").innerText = name;
-      document.getElementById("panelPath").innerText = path;
-      document.getElementById("panelEvent").innerText = eventName;
-      document.getElementById("panelNotes").innerText = notes;
-
-      const statusEl = document.getElementById("panelStatus");
-      statusEl.innerText = status;
-      statusEl.className = "status-badge";
-
-      if (color === "green") {
-        statusEl.classList.add("status-green");
-      } else if (color === "yellow") {
-        statusEl.classList.add("status-yellow");
-      } else if (color === "red") {
-        statusEl.classList.add("status-red");
-      }
+    function getNodeKey(node) {
+      return node.name + "-" + node.path;
     }
 
-    function renderWorkspace(type) {
-      const config = siteTypes[type];
+    function selectNode(node) {
+      selectedNodeKey = getNodeKey(node);
+
+      document.getElementById("panelName").innerText = node.name;
+      document.getElementById("panelPath").innerText = node.path;
+      document.getElementById("panelEvent").innerText = node.eventName;
+      document.getElementById("panelNotes").innerText = node.notes;
+
+      const statusEl = document.getElementById("panelStatus");
+      statusEl.innerText = node.status;
+      statusEl.className = "status-badge";
+
+      if (node.color === "green") {
+        statusEl.classList.add("status-green");
+      } else if (node.color === "yellow") {
+        statusEl.classList.add("status-yellow");
+      } else if (node.color === "red") {
+        statusEl.classList.add("status-red");
+      }
+
+      renderCanvas();
+    }
+
+    function getCounts(nodes) {
+      return {
+        all: nodes.length,
+        healthy: nodes.filter(node => node.color === "green").length,
+        opportunity: nodes.filter(node => node.color === "yellow").length,
+        broken: nodes.filter(node => node.color === "red").length
+      };
+    }
+
+    function renderFilters() {
+      const filtersEl = document.getElementById("filters");
+      const counts = getCounts(currentNodes);
+
+      const filterConfig = [
+        { key: "all", label: "All", count: counts.all },
+        { key: "healthy", label: "Healthy", count: counts.healthy },
+        { key: "opportunity", label: "Opportunity", count: counts.opportunity },
+        { key: "broken", label: "Broken", count: counts.broken }
+      ];
+
+      filtersEl.innerHTML = "";
+
+      filterConfig.forEach(filter => {
+        const btn = document.createElement("button");
+        btn.className = "filter-btn" + (currentFilter === filter.key ? " active" : "");
+        btn.innerText = `${filter.label} (${filter.count})`;
+        btn.onclick = function () {
+          currentFilter = filter.key;
+          renderFilters();
+          renderCanvas();
+        };
+        filtersEl.appendChild(btn);
+      });
+    }
+
+    function shouldShowNode(node) {
+      if (currentFilter === "all") return true;
+      if (currentFilter === "healthy") return node.color === "green";
+      if (currentFilter === "opportunity") return node.color === "yellow";
+      if (currentFilter === "broken") return node.color === "red";
+      return true;
+    }
+
+    function renderCanvas() {
       const canvas = document.getElementById("canvas");
-
-      document.getElementById("pagesFound").innerText = config.summary.pages;
-      document.getElementById("issuesFound").innerText = config.summary.issues;
-      document.getElementById("trackingFocus").innerText = config.summary.tracking;
-
       canvas.innerHTML = "";
 
-      config.lines.forEach(line => {
+      currentLines.forEach(line => {
         const lineEl = document.createElement("div");
         lineEl.className = "line";
+
+        const anyVisibleNodes = currentFilter === "all";
+        if (!anyVisibleNodes) {
+          lineEl.classList.add("hidden");
+        }
+
         lineEl.style.top = line.top + "px";
         lineEl.style.left = line.left + "px";
         lineEl.style.width = line.width + "px";
         canvas.appendChild(lineEl);
       });
 
-      config.nodes.forEach(node => {
+      currentNodes.forEach(node => {
         const nodeEl = document.createElement("div");
         nodeEl.className = "node " + node.color;
+
+        if (!shouldShowNode(node)) {
+          nodeEl.classList.add("hidden");
+        }
+
+        if (selectedNodeKey === getNodeKey(node)) {
+          nodeEl.classList.add("selected");
+        }
+
         nodeEl.style.top = node.top + "px";
         nodeEl.style.left = node.left + "px";
 
@@ -531,27 +618,27 @@
         `;
 
         nodeEl.onclick = function () {
-          selectNode(
-            node.name,
-            node.path,
-            node.status,
-            node.eventName,
-            node.notes,
-            node.color
-          );
+          selectNode(node);
         };
 
         canvas.appendChild(nodeEl);
       });
+    }
 
-      selectNode(
-        config.defaultNode.name,
-        config.defaultNode.path,
-        config.defaultNode.status,
-        config.defaultNode.eventName,
-        config.defaultNode.notes,
-        config.defaultNode.color
-      );
+    function renderWorkspace(type) {
+      const config = siteTypes[type];
+
+      currentNodes = config.nodes;
+      currentLines = config.lines;
+
+      document.getElementById("pagesFound").innerText = config.summary.pages;
+      document.getElementById("issuesFound").innerText = config.summary.issues;
+      document.getElementById("trackingFocus").innerText = config.summary.tracking;
+
+      const defaultNode = currentNodes.find(node => getNodeKey(node) === config.defaultNodeKey) || currentNodes[0];
+      selectNode(defaultNode);
+      renderFilters();
+      renderCanvas();
     }
 
     const detectedType = detectSiteType(url);
