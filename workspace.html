@@ -41,7 +41,7 @@
 
     .app-shell {
       display: grid;
-      grid-template-columns: 240px 1fr 320px;
+      grid-template-columns: 240px 1fr 340px;
       width: 100%;
       min-height: 100vh;
     }
@@ -117,14 +117,19 @@
       margin-bottom: 24px;
     }
 
-    .kpi-card {
-      background: linear-gradient(180deg, #111827 0%, #0b1220 100%);
+    .kpi-card,
+    .card,
+    .action-card,
+    .activity-section,
+    .panel-card {
+      background: #111827;
       border: 1px solid #1f2937;
       border-radius: 18px;
       padding: 18px;
     }
 
-    .kpi-label {
+    .kpi-label,
+    .label {
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -139,38 +144,17 @@
       margin-bottom: 6px;
     }
 
-    .kpi-note {
-      font-size: 13px;
-      color: #94a3b8;
-      line-height: 1.4;
-    }
-
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .card {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 16px;
-      padding: 18px;
-    }
-
-    .card h3 {
-      margin: 0 0 10px 0;
-      font-size: 16px;
-    }
-
-    .card p {
-      margin: 0;
-      color: #94a3b8;
+    .kpi-note,
+    .card p,
+    .action-card p,
+    .activity-item p {
       font-size: 14px;
+      color: #94a3b8;
       line-height: 1.5;
+      margin: 0;
     }
 
+    .summary,
     .actions-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -178,11 +162,13 @@
       margin-bottom: 24px;
     }
 
+    .card h3,
+    .action-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
     .action-card {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 18px;
-      padding: 18px;
       cursor: pointer;
       transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
@@ -193,45 +179,42 @@
       box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
     }
 
-    .action-card h3 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-    }
-
-    .action-card p {
-      margin: 0 0 12px 0;
-      font-size: 14px;
-      color: #94a3b8;
-      line-height: 1.5;
-    }
-
     .action-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 12px;
       flex-wrap: wrap;
+      margin-top: 12px;
     }
 
-    .action-badge {
+    .action-badge,
+    .issue-badge,
+    .status-badge {
       display: inline-block;
-      padding: 6px 10px;
+      padding: 7px 10px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: bold;
     }
 
-    .badge-high {
+    .badge-high,
+    .status-red,
+    .issue-red {
       background: rgba(239, 68, 68, 0.15);
       color: #fca5a5;
     }
 
-    .badge-medium {
+    .badge-medium,
+    .status-yellow,
+    .issue-yellow {
       background: rgba(245, 158, 11, 0.15);
       color: #fcd34d;
     }
 
-    .badge-low {
+    .badge-low,
+    .status-green,
+    .issue-green {
       background: rgba(34, 197, 94, 0.15);
       color: #86efac;
     }
@@ -240,6 +223,72 @@
       font-size: 13px;
       color: #67e8f9;
       font-weight: bold;
+    }
+
+    .activity-section {
+      margin-bottom: 24px;
+    }
+
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .activity-header h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .activity-status {
+      color: #67e8f9;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .activity-feed {
+      display: grid;
+      gap: 12px;
+    }
+
+    .activity-item {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid #1f2937;
+      border-radius: 14px;
+      background: #0b1220;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .activity-item.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .activity-dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.12);
+      color: #67e8f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .activity-item h4 {
+      margin: 0 0 5px 0;
+      font-size: 14px;
+      color: white;
     }
 
     .filters {
@@ -257,12 +306,6 @@
       padding: 10px 14px;
       font-size: 14px;
       cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .filter-btn:hover {
-      border-color: #22d3ee;
-      color: white;
     }
 
     .filter-btn.active {
@@ -289,7 +332,6 @@
       height: 2px;
       background: #334155;
       transform-origin: left center;
-      transition: opacity 0.15s ease;
     }
 
     .node {
@@ -322,7 +364,6 @@
     .node h3 {
       margin: 0 0 8px 0;
       font-size: 18px;
-      color: white;
     }
 
     .node p {
@@ -377,18 +418,15 @@
       text-align: left;
       border-bottom: 1px solid #1f2937;
       font-size: 14px;
-      vertical-align: middle;
     }
 
     .issues-table th {
       color: #94a3b8;
-      font-weight: 600;
       background: #0b1220;
     }
 
     .issues-table tr {
       cursor: pointer;
-      transition: background 0.15s ease;
     }
 
     .issues-table tr:hover {
@@ -397,29 +435,6 @@
 
     .issues-table tr.selected-row {
       background: rgba(34, 211, 238, 0.12);
-    }
-
-    .issue-badge {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .issue-green {
-      background: rgba(34, 197, 94, 0.15);
-      color: #86efac;
-    }
-
-    .issue-yellow {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fcd34d;
-    }
-
-    .issue-red {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
     }
 
     .panel {
@@ -444,42 +459,10 @@
       border-bottom: none;
     }
 
-    .label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #64748b;
-      margin-bottom: 8px;
-    }
-
     .value {
       font-size: 16px;
       color: white;
       line-height: 1.5;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-
-    .status-green {
-      background: rgba(34, 197, 94, 0.15);
-      color: #86efac;
-    }
-
-    .status-yellow {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fcd34d;
-    }
-
-    .status-red {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
     }
 
     @media (max-width: 1280px) {
@@ -493,11 +476,6 @@
     @media (max-width: 1100px) {
       .app-shell {
         grid-template-columns: 1fr;
-      }
-
-      .sidebar,
-      .panel {
-        border: none;
       }
 
       .summary,
@@ -527,6 +505,7 @@
         <div class="nav-item active">Visual Sitemap</div>
         <div class="nav-item">Issues</div>
         <div class="nav-item">Tracking Opportunities</div>
+        <div class="nav-item">Activity Feed</div>
         <div class="nav-item">Exports</div>
       </div>
 
@@ -575,6 +554,14 @@
             <h3>Tracking Focus</h3>
             <p id="trackingFocus">Loading...</p>
           </div>
+        </div>
+
+        <div class="activity-section">
+          <div class="activity-header">
+            <h3>Crawl Activity Feed</h3>
+            <div class="activity-status" id="activityStatus">Processing...</div>
+          </div>
+          <div class="activity-feed" id="activityFeed"></div>
         </div>
 
         <div class="actions-grid" id="actionsGrid"></div>
@@ -647,6 +634,7 @@
     let currentNodes = [];
     let currentLines = [];
     let currentActions = [];
+    let currentActivities = [];
     let selectedNodeKey = "";
 
     const siteTypes = {
@@ -661,25 +649,17 @@
           healthNote: "Solid structure, but purchase-path instrumentation should improve."
         },
         defaultNodeKey: "Pricing-/pricing",
+        activities: [
+          { title: "Blueprint started", text: "URL received and workspace session initialized." },
+          { title: "Site pattern detected", text: "Ecommerce-style journey identified from URL signals." },
+          { title: "Pages mapped", text: "Homepage, products, pricing, cart, checkout, contact and a broken legacy page prepared." },
+          { title: "Issue flagged", text: "A broken legacy URL was detected in the demo sitemap model." },
+          { title: "Tracking recommendations generated", text: "Checkout, cart and pricing were prioritized for GA4 event mapping." }
+        ],
         actions: [
-          {
-            title: "Track checkout progression",
-            description: "Instrument begin_checkout and step progression on the checkout path to identify abandonment.",
-            priority: "High",
-            targetPath: "/checkout"
-          },
-          {
-            title: "Fix broken legacy page",
-            description: "Redirect the outdated page and inspect internal links or old campaign references still sending traffic there.",
-            priority: "High",
-            targetPath: "/old-page"
-          },
-          {
-            title: "Improve pricing measurement",
-            description: "Add CTA click and decision-stage event tracking on pricing to better capture commercial intent.",
-            priority: "Medium",
-            targetPath: "/pricing"
-          }
+          { title: "Track checkout progression", description: "Instrument begin_checkout and step progression on the checkout path to identify abandonment.", priority: "High", targetPath: "/checkout" },
+          { title: "Fix broken legacy page", description: "Redirect the outdated page and inspect internal links or old campaign references still sending traffic there.", priority: "High", targetPath: "/old-page" },
+          { title: "Improve pricing measurement", description: "Add CTA click and decision-stage event tracking on pricing to better capture commercial intent.", priority: "Medium", targetPath: "/pricing" }
         ],
         nodes: [
           { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry page for traffic and journey mapping.", color: "green", top: 50, left: 40 },
@@ -710,25 +690,17 @@
           healthNote: "Lead path is clear, but service-page and form measurement can be tightened."
         },
         defaultNodeKey: "Services-/services",
+        activities: [
+          { title: "Blueprint started", text: "URL received and analysis session prepared." },
+          { title: "Site pattern detected", text: "Lead-generation structure inferred from default business-site signals." },
+          { title: "Primary journey mapped", text: "Homepage, about, services, contact and thank-you journey prepared." },
+          { title: "Conversion point found", text: "Thank-you page identified as likely lead confirmation destination." },
+          { title: "Tracking recommendations generated", text: "Services, contact and thank-you were prioritized for measurement." }
+        ],
         actions: [
-          {
-            title: "Track service-page intent",
-            description: "Measure CTA interactions and content engagement on services to identify which offers drive interest.",
-            priority: "High",
-            targetPath: "/services"
-          },
-          {
-            title: "Strengthen lead attribution",
-            description: "Ensure the thank-you page is consistently tied to generate_lead measurement and campaign reporting.",
-            priority: "High",
-            targetPath: "/thank-you"
-          },
-          {
-            title: "Repair the broken offer path",
-            description: "Fix or redirect the legacy offer URL to reduce leakage from historical traffic sources.",
-            priority: "Medium",
-            targetPath: "/old-offer"
-          }
+          { title: "Track service-page intent", description: "Measure CTA interactions and content engagement on services to identify which offers drive interest.", priority: "High", targetPath: "/services" },
+          { title: "Strengthen lead attribution", description: "Ensure the thank-you page is consistently tied to generate_lead measurement and campaign reporting.", priority: "High", targetPath: "/thank-you" },
+          { title: "Repair the broken offer path", description: "Fix or redirect the legacy offer URL to reduce leakage from historical traffic sources.", priority: "Medium", targetPath: "/old-offer" }
         ],
         nodes: [
           { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Primary landing page for brand entry and top-level messaging.", color: "green", top: 50, left: 60 },
@@ -757,25 +729,17 @@
           healthNote: "Content structure is usable, but engagement and subscription tracking need focus."
         },
         defaultNodeKey: "Blog-/blog",
+        activities: [
+          { title: "Blueprint started", text: "URL received and content-style analysis prepared." },
+          { title: "Site pattern detected", text: "Content or media structure inferred from URL signals." },
+          { title: "Content journey mapped", text: "Blog index, article page and subscription path prepared." },
+          { title: "Engagement gap identified", text: "Article and blog pages flagged for scroll and CTA tracking." },
+          { title: "Tracking recommendations generated", text: "Article views, scroll depth and subscription events prioritized." }
+        ],
         actions: [
-          {
-            title: "Measure article engagement",
-            description: "Add scroll-depth and CTA interaction tracking on articles to understand true content quality.",
-            priority: "High",
-            targetPath: "/blog/how-to-scale"
-          },
-          {
-            title: "Fix outdated post path",
-            description: "Redirect the broken old-post URL and clean up links from archives or newsletters.",
-            priority: "High",
-            targetPath: "/old-post"
-          },
-          {
-            title: "Improve subscription tracking",
-            description: "Capture submit success and intent events on the subscribe page to connect content to list growth.",
-            priority: "Medium",
-            targetPath: "/subscribe"
-          }
+          { title: "Measure article engagement", description: "Add scroll-depth and CTA interaction tracking on articles to understand true content quality.", priority: "High", targetPath: "/blog/how-to-scale" },
+          { title: "Fix outdated post path", description: "Redirect the broken old-post URL and clean up links from archives or newsletters.", priority: "High", targetPath: "/old-post" },
+          { title: "Improve subscription tracking", description: "Capture submit success and intent events on the subscribe page to connect content to list growth.", priority: "Medium", targetPath: "/subscribe" }
         ],
         nodes: [
           { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry point and content discovery start.", color: "green", top: 50, left: 60 },
@@ -1020,6 +984,34 @@
       });
     }
 
+    function renderActivityFeed() {
+      const feed = document.getElementById("activityFeed");
+      feed.innerHTML = "";
+
+      currentActivities.forEach((activity, index) => {
+        const item = document.createElement("div");
+        item.className = "activity-item";
+
+        item.innerHTML = `
+          <div class="activity-dot">${index + 1}</div>
+          <div>
+            <h4>${activity.title}</h4>
+            <p>${activity.text}</p>
+          </div>
+        `;
+
+        feed.appendChild(item);
+
+        setTimeout(() => {
+          item.classList.add("show");
+        }, 250 * index);
+      });
+
+      setTimeout(() => {
+        document.getElementById("activityStatus").innerText = "Complete";
+      }, 250 * currentActivities.length + 300);
+    }
+
     function renderKpis(config) {
       const counts = getCounts(currentNodes);
       const trackingGaps = currentNodes.filter(node => node.color === "yellow").length;
@@ -1037,6 +1029,7 @@
       currentNodes = config.nodes;
       currentLines = config.lines;
       currentActions = config.actions;
+      currentActivities = config.activities;
 
       document.getElementById("pagesFound").innerText = config.summary.pages;
       document.getElementById("issuesFound").innerText = config.summary.issues;
@@ -1044,6 +1037,7 @@
 
       renderKpis(config);
       renderActions();
+      renderActivityFeed();
 
       const defaultNode = currentNodes.find(node => getNodeKey(node) === config.defaultNodeKey) || currentNodes[0];
       selectNode(defaultNode);
