@@ -2,57 +2,61 @@ export default async function handler(request, response) {
   try {
     const { url } = request.query;
 
-    if (!url) return response.status(400).json({ error: "Missing URL." });
+    if (!url) {
+      return response.status(400).json({ error: "Missing URL. Add ?url=https://example.com" });
+    }
 
     let startUrl;
+
     try {
       startUrl = new URL(url);
     } catch {
-      return response.status(400).json({ error: "Invalid URL. Use https://example.com" });
+      return response.status(400).json({ error: "Invalid URL. Use full URL like https://example.com" });
     }
 
-    const maxPages = 10;
+    if (!["http:", "https:"].includes(startUrl.protocol)) {
+      return response.status(400).json({ error: "Only http and https URLs are allowed." });
+    }
+
+    const maxPages = 12;
     const visited = new Set();
     const queue = [startUrl.href];
     const pages = [];
+    const edges = [];
 
     while (queue.length > 0 && pages.length < maxPages) {
       const currentUrl = queue.shift();
-      if (visited.has(currentUrl)) continue;
 
+      if (visited.has(currentUrl)) continue;
       visited.add(currentUrl);
 
-      const page = await crawlPage(currentUrl, startUrl.hostname);
-      pages.push(page);
+      const pageData = await crawlPage(currentUrl, startUrl.hostname);
+      pages.push(pageData);
 
-      page.links.forEach(link => {
+      pageData.links.forEach(link => {
+        edges.push({
+          from: currentUrl,
+          to: link
+        });
+
         if (!visited.has(link) && queue.length + pages.length < maxPages) {
           queue.push(link);
         }
       });
     }
 
-    const pageUrls = new Set(pages.map(page => page.url));
+    const crawledUrls = new Set(pages.map(page => page.url));
 
-    const edges = [];
-
-    pages.forEach(page => {
-      page.links.forEach(link => {
-        if (pageUrls.has(link)) {
-          edges.push({
-            from: page.url,
-            to: link
-          });
-        }
-      });
-    });
+    const filteredEdges = edges.filter(edge =>
+      crawledUrls.has(edge.from) && crawledUrls.has(edge.to)
+    );
 
     return response.status(200).json({
       crawledUrl: startUrl.href,
       pagesCrawled: pages.length,
-      linksFound: [...new Set(pages.flatMap(page => page.links))].length,
       pages,
-      edges
+      edges: filteredEdges,
+      linksFound: [...new Set(pages.flatMap(page => page.links))].length
     });
 
   } catch (error) {
@@ -84,11 +88,10 @@ async function crawlPage(pageUrl, rootHostname) {
       ? titleMatch[1].replace(/\s+/g, " ").trim()
       : "Untitled page";
 
-    const matches = [...html.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
+    const linkMatches = [...html.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
+    const internalLinks = [];
 
-    const links = [];
-
-    matches.forEach(match => {
+    linkMatches.forEach(match => {
       const href = match[2];
 
       if (
@@ -97,37 +100,52 @@ async function crawlPage(pageUrl, rootHostname) {
         href.startsWith("mailto:") ||
         href.startsWith("tel:") ||
         href.startsWith("javascript:")
-      ) return;
+      ) {
+        return;
+      }
 
       try {
         const absoluteUrl = new URL(href, pageUrl);
 
         if (absoluteUrl.hostname === rootHostname) {
           absoluteUrl.hash = "";
-          links.push(absoluteUrl.href);
+          internalLinks.push(normalizeUrl(absoluteUrl.href));
         }
-      } catch {}
+      } catch {
+        // Ignore bad hrefs
+      }
     });
 
     return {
-      url: pageUrl,
-      title,
+      url: normalizeUrl(pageUrl),
       statusCode: siteResponse.status,
-      status: siteResponse.status >= 400 ? "Broken" : "Detected",
+      title,
+      links: [...new Set(internalLinks)].slice(0, 25),
       suggestedEvent: suggestEvent(pageUrl),
-      links: [...new Set(links)].slice(0, 25)
+      status: siteResponse.status >= 400 ? "Broken" : "Detected"
     };
 
   } catch {
     return {
-      url: pageUrl,
-      title: "Failed to crawl",
+      url: normalizeUrl(pageUrl),
       statusCode: 0,
-      status: "Failed",
+      title: "Failed to crawl",
+      links: [],
       suggestedEvent: suggestEvent(pageUrl),
-      links: []
+      status: "Failed"
     };
   }
+}
+
+function normalizeUrl(rawUrl) {
+  const url = new URL(rawUrl);
+  url.hash = "";
+
+  if (url.pathname !== "/" && url.pathname.endsWith("/")) {
+    url.pathname = url.pathname.slice(0, -1);
+  }
+
+  return url.href;
 }
 
 function suggestEvent(rawUrl) {
