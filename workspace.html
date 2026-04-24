@@ -107,6 +107,10 @@
       border-color: #f59e0b;
     }
 
+    .node.broken {
+      border-color: #ef4444;
+    }
+
     .node h3 {
       margin: 0 0 8px 0;
       font-size: 16px;
@@ -141,6 +145,7 @@
       border-bottom: 1px solid #1f2937;
       text-align: left;
       font-size: 14px;
+      vertical-align: top;
     }
 
     th {
@@ -164,6 +169,16 @@
       color: #86efac;
       font-size: 12px;
       font-weight: bold;
+    }
+
+    .status.broken {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+    }
+
+    .status.failed {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
     }
 
     .loading {
@@ -212,6 +227,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="loading" id="loadingScreen">
     <div>
@@ -235,12 +251,12 @@
 
     <div class="grid">
       <div class="card">
-        <h3>Homepage Status</h3>
-        <p id="statusCard">Loading...</p>
+        <h3>Pages Crawled</h3>
+        <p id="pagesCard">Loading...</p>
       </div>
 
       <div class="card">
-        <h3>Page Title</h3>
+        <h3>Homepage Title</h3>
         <p id="titleCard">Loading...</p>
       </div>
 
@@ -259,6 +275,7 @@
             <th>Page</th>
             <th>URL</th>
             <th>Status</th>
+            <th>HTTP</th>
             <th>Suggested Event</th>
           </tr>
         </thead>
@@ -291,15 +308,37 @@
           return;
         }
 
-        crawlData = data;
+        crawlData = normalizeCrawlData(data);
 
         document.getElementById("loadingScreen").style.display = "none";
         document.getElementById("resultsScreen").style.display = "block";
 
-        renderResults(data);
+        renderResults(crawlData);
       } catch (error) {
         showError("Something went wrong while calling the crawler.");
       }
+    }
+
+    function normalizeCrawlData(data) {
+      if (Array.isArray(data.pages)) {
+        return data;
+      }
+
+      return {
+        crawledUrl: data.crawledUrl,
+        pagesCrawled: 1,
+        linksFound: data.linksFound || 0,
+        pages: [
+          {
+            url: data.crawledUrl,
+            statusCode: data.statusCode,
+            title: data.title,
+            links: data.links || [],
+            suggestedEvent: "page_view",
+            status: "Detected"
+          }
+        ]
+      };
     }
 
     function showError(message) {
@@ -315,10 +354,12 @@
     }
 
     function renderResults(data) {
+      const homepage = data.pages[0];
+
       document.getElementById("siteUrl").innerText = "Website: " + data.crawledUrl;
-      document.getElementById("statusCard").innerText = "HTTP " + data.statusCode;
-      document.getElementById("titleCard").innerText = data.title || "Untitled page";
-      document.getElementById("linksCard").innerText = data.linksFound + " internal links found on the homepage.";
+      document.getElementById("pagesCard").innerText = data.pagesCrawled + " pages crawled across the site.";
+      document.getElementById("titleCard").innerText = homepage && homepage.title ? homepage.title : "Untitled homepage";
+      document.getElementById("linksCard").innerText = data.linksFound + " unique internal links discovered.";
 
       renderCanvas(data);
       renderTable(data);
@@ -328,22 +369,30 @@
       const canvas = document.getElementById("canvas");
       canvas.innerHTML = "";
 
+      const pages = data.pages || [];
+      if (pages.length === 0) {
+        canvas.innerHTML = "<p style='padding:24px;'>No pages were returned from the crawler.</p>";
+        return;
+      }
+
+      const homepage = pages[0];
+
       const homeNode = document.createElement("div");
-      homeNode.className = "node home active";
+      homeNode.className = getNodeClass(homepage, true) + " active";
       homeNode.style.top = "60px";
       homeNode.style.left = "60px";
       homeNode.innerHTML = `
         <h3>Homepage</h3>
-        <p>${data.crawledUrl}</p>
+        <p>${homepage.url}</p>
       `;
       homeNode.onclick = function () {
-        selectNode(data.crawledUrl);
+        selectNode(homepage.url);
       };
       canvas.appendChild(homeNode);
 
-      const links = data.links.slice(0, 12);
+      const childPages = pages.slice(1, 13);
 
-      links.forEach((link, index) => {
+      childPages.forEach((page, index) => {
         const row = Math.floor(index / 3);
         const col = index % 3;
 
@@ -354,20 +403,20 @@
         line.className = "line";
         line.style.left = "285px";
         line.style.top = "100px";
-        line.style.width = (left - 285) + "px";
+        line.style.width = Math.max(80, left - 285) + "px";
         canvas.appendChild(line);
 
         const node = document.createElement("div");
-        node.className = "node link";
+        node.className = getNodeClass(page, false);
         node.style.left = left + "px";
         node.style.top = top + "px";
         node.innerHTML = `
-          <h3>${getPathName(link)}</h3>
-          <p>${link}</p>
+          <h3>${getPathName(page.url)}</h3>
+          <p>${page.url}</p>
         `;
 
         node.onclick = function () {
-          selectNode(link);
+          selectNode(page.url);
         };
 
         canvas.appendChild(node);
@@ -378,18 +427,13 @@
       const table = document.getElementById("linksTable");
       table.innerHTML = "";
 
-      const rows = [
-        {
-          name: "Homepage",
-          url: data.crawledUrl,
-          event: "page_view"
-        },
-        ...data.links.map(link => ({
-          name: getPathName(link),
-          url: link,
-          event: suggestEvent(link)
-        }))
-      ];
+      const rows = data.pages.map(page => ({
+        name: getPathName(page.url),
+        url: page.url,
+        event: page.suggestedEvent || suggestEvent(page.url),
+        status: page.status || "Detected",
+        statusCode: page.statusCode || 0
+      }));
 
       rows.forEach(row => {
         const tr = document.createElement("tr");
@@ -401,7 +445,8 @@
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.url}</td>
-          <td><span class="status">Detected</span></td>
+          <td><span class="${getStatusClass(row.status)}">${row.status}</span></td>
+          <td>${row.statusCode}</td>
           <td>${row.event}</td>
         `;
 
@@ -419,6 +464,22 @@
           node.classList.add("active");
         }
       });
+    }
+
+    function getNodeClass(page, isHome) {
+      let baseClass = isHome ? "node home" : "node link";
+
+      if (page.status === "Broken" || page.statusCode >= 400) {
+        baseClass += " broken";
+      }
+
+      return baseClass;
+    }
+
+    function getStatusClass(status) {
+      if (status === "Broken") return "status broken";
+      if (status === "Failed") return "status failed";
+      return "status";
     }
 
     function getPathName(rawUrl) {
@@ -450,6 +511,8 @@
       if (value.includes("blog")) return "view_article";
       if (value.includes("product")) return "view_item";
       if (value.includes("thank")) return "generate_lead";
+      if (value.includes("demo")) return "generate_lead";
+      if (value.includes("book")) return "generate_lead";
 
       return "page_view";
     }
@@ -465,17 +528,20 @@
       report += "AUDIIANCE REAL CRAWL BLUEPRINT\n";
       report += "==============================\n\n";
       report += "Website: " + crawlData.crawledUrl + "\n";
-      report += "Status Code: " + crawlData.statusCode + "\n";
-      report += "Page Title: " + crawlData.title + "\n";
+      report += "Pages Crawled: " + crawlData.pagesCrawled + "\n";
       report += "Internal Links Found: " + crawlData.linksFound + "\n";
       report += "Generated: " + new Date().toLocaleString() + "\n\n";
 
-      report += "SITEMAP LINKS\n";
+      report += "CRAWLED PAGES\n";
       report += "-------------\n";
 
-      crawlData.links.forEach((link, index) => {
-        report += index + 1 + ". " + link + "\n";
-        report += "Suggested Event: " + suggestEvent(link) + "\n\n";
+      crawlData.pages.forEach((page, index) => {
+        report += index + 1 + ". " + page.url + "\n";
+        report += "Title: " + page.title + "\n";
+        report += "HTTP Status: " + page.statusCode + "\n";
+        report += "Page Status: " + page.status + "\n";
+        report += "Suggested Event: " + (page.suggestedEvent || suggestEvent(page.url)) + "\n";
+        report += "Links Found On Page: " + page.links.length + "\n\n";
       });
 
       const blob = new Blob([report], { type: "text/plain" });
