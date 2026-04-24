@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Audiiance - Workspace</title>
+  <title>Audiiance - Real Crawl Workspace</title>
   <style>
     body {
       margin: 0;
@@ -10,94 +10,29 @@
       font-family: Arial, sans-serif;
     }
 
-    .loading-screen,
-    .results-screen {
+    .screen {
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 40px;
+      padding: 32px;
       box-sizing: border-box;
-    }
-
-    .results-screen {
-      display: none;
-      align-items: stretch;
-      justify-content: stretch;
-      padding: 0;
-      text-align: left;
-    }
-
-    .loading-box h1 {
-      margin-bottom: 12px;
-      font-size: 48px;
-    }
-
-    .loading-box p {
-      font-size: 24px;
-      color: #cbd5e1;
-    }
-
-    .app-shell {
-      display: grid;
-      grid-template-columns: 240px 1fr 340px;
-      width: 100%;
-      min-height: 100vh;
-    }
-
-    .sidebar {
-      background: #111827;
-      border-right: 1px solid #1f2937;
-      padding: 24px;
-      box-sizing: border-box;
-    }
-
-    .brand {
-      font-size: 28px;
-      font-weight: bold;
-      margin-bottom: 30px;
-    }
-
-    .nav-item {
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: #1e293b;
-      color: #cbd5e1;
-      margin-bottom: 12px;
-      font-size: 14px;
-    }
-
-    .nav-item.active {
-      background: #22d3ee;
-      color: #0f172a;
-      font-weight: bold;
-    }
-
-    .main {
-      padding: 24px;
-      box-sizing: border-box;
-      background: #0f172a;
     }
 
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 20px;
-      margin-bottom: 24px;
+      gap: 16px;
       flex-wrap: wrap;
+      margin-bottom: 24px;
     }
 
-    .topbar h1 {
+    h1 {
       margin: 0 0 8px 0;
       font-size: 34px;
     }
 
-    .topbar p {
+    p {
       margin: 0;
       color: #94a3b8;
-      font-size: 16px;
     }
 
     .button {
@@ -110,209 +45,28 @@
       cursor: pointer;
     }
 
-    .kpi-strip {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .kpi-card,
-    .card,
-    .action-card,
-    .activity-section,
-    .panel-card {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 18px;
-      padding: 18px;
-    }
-
-    .kpi-label,
-    .label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #64748b;
-      margin-bottom: 8px;
-    }
-
-    .kpi-value {
-      font-size: 28px;
-      font-weight: bold;
-      color: white;
-      margin-bottom: 6px;
-    }
-
-    .kpi-note,
-    .card p,
-    .action-card p,
-    .activity-item p {
-      font-size: 14px;
-      color: #94a3b8;
-      line-height: 1.5;
-      margin: 0;
-    }
-
-    .summary,
-    .actions-grid {
+    .grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
 
-    .card h3,
-    .action-card h3 {
+    .card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .card h3 {
       margin: 0 0 10px 0;
       font-size: 16px;
     }
 
-    .action-card {
-      cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .action-card:hover {
-      transform: translateY(-2px);
-      border-color: #22d3ee;
-      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
-    }
-
-    .action-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-
-    .action-badge,
-    .issue-badge,
-    .status-badge {
-      display: inline-block;
-      padding: 7px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .badge-high,
-    .status-red,
-    .issue-red {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
-    }
-
-    .badge-medium,
-    .status-yellow,
-    .issue-yellow {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fcd34d;
-    }
-
-    .badge-low,
-    .status-green,
-    .issue-green {
-      background: rgba(34, 197, 94, 0.15);
-      color: #86efac;
-    }
-
-    .action-link {
-      font-size: 13px;
-      color: #67e8f9;
-      font-weight: bold;
-    }
-
-    .activity-section {
-      margin-bottom: 24px;
-    }
-
-    .activity-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .activity-header h3 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .activity-status {
-      color: #67e8f9;
-      font-size: 13px;
-      font-weight: bold;
-    }
-
-    .activity-feed {
-      display: grid;
-      gap: 12px;
-    }
-
-    .activity-item {
-      display: grid;
-      grid-template-columns: 34px 1fr;
-      gap: 12px;
-      align-items: start;
-      padding: 12px;
-      border: 1px solid #1f2937;
-      border-radius: 14px;
-      background: #0b1220;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 0.25s ease, transform 0.25s ease;
-    }
-
-    .activity-item.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .activity-dot {
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      background: rgba(34, 211, 238, 0.12);
-      color: #67e8f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: bold;
-    }
-
-    .activity-item h4 {
-      margin: 0 0 5px 0;
+    .card p {
       font-size: 14px;
-      color: white;
-    }
-
-    .filters {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 18px;
-    }
-
-    .filter-btn {
-      background: #111827;
-      color: #cbd5e1;
-      border: 1px solid #1f2937;
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .filter-btn.active {
-      background: #22d3ee;
-      color: #0f172a;
-      border-color: #22d3ee;
-      font-weight: bold;
+      line-height: 1.5;
     }
 
     .canvas {
@@ -322,9 +76,45 @@
       border: 1px solid #1f2937;
       border-radius: 20px;
       overflow: hidden;
-      padding: 30px;
-      box-sizing: border-box;
       margin-bottom: 24px;
+    }
+
+    .node {
+      position: absolute;
+      width: 220px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+    }
+
+    .node:hover {
+      border-color: #22d3ee;
+    }
+
+    .node.active {
+      border-color: #22d3ee;
+      box-shadow: 0 0 0 2px #22d3ee;
+    }
+
+    .node.home {
+      border-color: #22c55e;
+    }
+
+    .node.link {
+      border-color: #f59e0b;
+    }
+
+    .node h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+    }
+
+    .node p {
+      font-size: 13px;
+      word-break: break-word;
     }
 
     .line {
@@ -334,783 +124,370 @@
       transform-origin: left center;
     }
 
-    .node {
-      position: absolute;
-      min-width: 180px;
-      padding: 16px 18px;
-      border-radius: 14px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-      cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-    }
-
-    .node:hover {
-      transform: translateY(-2px);
-      border-color: #22d3ee;
-    }
-
-    .node.selected {
-      box-shadow: 0 0 0 2px #22d3ee, 0 10px 25px rgba(0, 0, 0, 0.25);
-      border-color: #22d3ee;
-    }
-
-    .node.hidden,
-    .line.hidden {
-      opacity: 0.15;
-    }
-
-    .node h3 {
-      margin: 0 0 8px 0;
-      font-size: 18px;
-    }
-
-    .node p {
-      margin: 0;
-      font-size: 14px;
-      color: #94a3b8;
-    }
-
-    .node.green {
-      border-color: #22c55e;
-    }
-
-    .node.yellow {
-      border-color: #f59e0b;
-    }
-
-    .node.red {
-      border-color: #ef4444;
-    }
-
-    .issues-section {
+    .table-wrap {
       background: #111827;
       border: 1px solid #1f2937;
       border-radius: 20px;
       overflow: hidden;
     }
 
-    .issues-header {
-      padding: 18px 20px;
-      border-bottom: 1px solid #1f2937;
-    }
-
-    .issues-header h3 {
-      margin: 0 0 6px 0;
-      font-size: 20px;
-    }
-
-    .issues-header p {
-      margin: 0;
-      color: #94a3b8;
-      font-size: 14px;
-    }
-
-    .issues-table {
+    table {
       width: 100%;
       border-collapse: collapse;
     }
 
-    .issues-table th,
-    .issues-table td {
-      padding: 16px 20px;
-      text-align: left;
+    th, td {
+      padding: 16px;
       border-bottom: 1px solid #1f2937;
+      text-align: left;
       font-size: 14px;
     }
 
-    .issues-table th {
-      color: #94a3b8;
+    th {
       background: #0b1220;
+      color: #94a3b8;
     }
 
-    .issues-table tr {
+    tr {
       cursor: pointer;
     }
 
-    .issues-table tr:hover {
+    tr:hover {
       background: rgba(34, 211, 238, 0.06);
     }
 
-    .issues-table tr.selected-row {
-      background: rgba(34, 211, 238, 0.12);
+    .status {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      font-size: 12px;
+      font-weight: bold;
     }
 
-    .panel {
-      background: #111827;
-      border-left: 1px solid #1f2937;
-      padding: 24px;
+    .loading {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px;
       box-sizing: border-box;
     }
 
-    .panel h2 {
-      margin-top: 0;
-      font-size: 24px;
+    .loading h1 {
+      font-size: 46px;
+      margin-bottom: 12px;
     }
 
-    .panel-section {
-      margin-bottom: 22px;
-      padding-bottom: 18px;
-      border-bottom: 1px solid #1f2937;
+    .error-box {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fecaca;
+      border-radius: 18px;
+      padding: 20px;
+      margin-top: 20px;
     }
 
-    .panel-section:last-child {
-      border-bottom: none;
-    }
-
-    .value {
-      font-size: 16px;
-      color: white;
-      line-height: 1.5;
-    }
-
-    @media (max-width: 1280px) {
-      .actions-grid,
-      .kpi-strip,
-      .summary {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    @media (max-width: 1100px) {
-      .app-shell {
+    @media (max-width: 900px) {
+      .grid {
         grid-template-columns: 1fr;
       }
 
-      .summary,
-      .kpi-strip,
-      .actions-grid {
-        grid-template-columns: 1fr;
+      .node {
+        position: relative;
+        top: auto !important;
+        left: auto !important;
+        margin: 16px;
       }
 
-      .panel {
-        border-top: 1px solid #1f2937;
+      .line {
+        display: none;
+      }
+
+      .canvas {
+        padding: 1px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="loading-screen" id="loadingScreen">
-    <div class="loading-box">
-      <h1>Blueprint Initialized</h1>
-      <p id="statusText">Preparing analysis...</p>
+  <div class="loading" id="loadingScreen">
+    <div>
+      <h1>Real Crawl Started</h1>
+      <p id="loadingText">Fetching website structure...</p>
     </div>
   </div>
 
-  <div class="results-screen" id="resultsScreen">
-    <div class="app-shell">
-      <div class="sidebar">
-        <div class="brand">Audiiance</div>
-        <div class="nav-item active">Visual Sitemap</div>
-        <div class="nav-item">Issues</div>
-        <div class="nav-item">Tracking Opportunities</div>
-        <div class="nav-item">Activity Feed</div>
-        <div class="nav-item">Exports</div>
+  <div class="screen" id="resultsScreen" style="display:none;">
+    <div class="topbar">
+      <div>
+        <h1>Real Sitemap Preview</h1>
+        <p id="siteUrl">Website: loading...</p>
       </div>
 
-      <div class="main">
-        <div class="topbar">
-          <div>
-            <h1>Blueprint Dashboard</h1>
-            <p id="resultUrl">Website: loading...</p>
-          </div>
-          <div style="display:flex; gap:12px; flex-wrap:wrap;">
-  <button class="button" onclick="exportBlueprint()">Export Blueprint</button>
-  <button class="button" onclick="window.location.href='/'">Run New Blueprint</button>
-</div>
-        </div>
+      <div>
+        <button class="button" onclick="exportBlueprint()">Export Blueprint</button>
+        <button class="button" onclick="window.location.href='/'">Run New Blueprint</button>
+      </div>
+    </div>
 
-        <div class="kpi-strip">
-          <div class="kpi-card">
-            <div class="kpi-label">Health Score</div>
-            <div class="kpi-value" id="kpiHealthScore">--</div>
-            <div class="kpi-note" id="kpiHealthNote">Loading...</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Broken Pages</div>
-            <div class="kpi-value" id="kpiBrokenPages">--</div>
-            <div class="kpi-note">Pages likely requiring redirects or navigation cleanup.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Tracking Gaps</div>
-            <div class="kpi-value" id="kpiTrackingGaps">--</div>
-            <div class="kpi-note">High-value pages where event coverage should be prioritized.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Priority Actions</div>
-            <div class="kpi-value" id="kpiPriorityActions">--</div>
-            <div class="kpi-note">Suggested next actions generated for this blueprint.</div>
-          </div>
-        </div>
-
-        <div class="summary">
-          <div class="card">
-            <h3>Pages Found</h3>
-            <p id="pagesFound">Loading...</p>
-          </div>
-          <div class="card">
-            <h3>Issues Found</h3>
-            <p id="issuesFound">Loading...</p>
-          </div>
-          <div class="card">
-            <h3>Tracking Focus</h3>
-            <p id="trackingFocus">Loading...</p>
-          </div>
-        </div>
-
-        <div class="activity-section">
-          <div class="activity-header">
-            <h3>Crawl Activity Feed</h3>
-            <div class="activity-status" id="activityStatus">Processing...</div>
-          </div>
-          <div class="activity-feed" id="activityFeed"></div>
-        </div>
-
-        <div class="actions-grid" id="actionsGrid"></div>
-
-        <div class="filters" id="filters"></div>
-
-        <div class="canvas" id="canvas"></div>
-
-        <div class="issues-section">
-          <div class="issues-header">
-            <h3>Issues & Opportunities</h3>
-            <p>Click any row to inspect the page and sync the right-side detail panel.</p>
-          </div>
-
-          <table class="issues-table">
-            <thead>
-              <tr>
-                <th>Page</th>
-                <th>Path</th>
-                <th>Status</th>
-                <th>Suggested Event</th>
-              </tr>
-            </thead>
-            <tbody id="issuesTableBody"></tbody>
-          </table>
-        </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Homepage Status</h3>
+        <p id="statusCard">Loading...</p>
       </div>
 
-      <div class="panel">
-        <h2>Page Details</h2>
-
-        <div class="panel-section">
-          <div class="label">Page Name</div>
-          <div class="value" id="panelName">Loading...</div>
-        </div>
-
-        <div class="panel-section">
-          <div class="label">Path</div>
-          <div class="value" id="panelPath">Loading...</div>
-        </div>
-
-        <div class="panel-section">
-          <div class="label">Status</div>
-          <div class="value">
-            <span class="status-badge" id="panelStatus">Loading...</span>
-          </div>
-        </div>
-
-        <div class="panel-section">
-          <div class="label">Suggested Event</div>
-          <div class="value" id="panelEvent">Loading...</div>
-        </div>
-
-        <div class="panel-section">
-          <div class="label">Notes</div>
-          <div class="value" id="panelNotes">Loading...</div>
-        </div>
+      <div class="card">
+        <h3>Page Title</h3>
+        <p id="titleCard">Loading...</p>
       </div>
+
+      <div class="card">
+        <h3>Internal Links Found</h3>
+        <p id="linksCard">Loading...</p>
+      </div>
+    </div>
+
+    <div class="canvas" id="canvas"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Page</th>
+            <th>URL</th>
+            <th>Status</th>
+            <th>Suggested Event</th>
+          </tr>
+        </thead>
+        <tbody id="linksTable"></tbody>
+      </table>
     </div>
   </div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const url = params.get("url") || "example.com";
+    const submittedUrl = params.get("url");
 
-    document.getElementById("statusText").innerText = "Analyzing: " + url;
-    document.getElementById("resultUrl").innerText = "Website: " + url;
+    let crawlData = null;
+    let selectedUrl = "";
 
-    let currentFilter = "all";
-    let currentNodes = [];
-    let currentLines = [];
-    let currentActions = [];
-    let currentActivities = [];
-    let selectedNodeKey = "";
+    if (!submittedUrl) {
+      showError("No URL was provided. Go back and enter a website URL.");
+    } else {
+      document.getElementById("loadingText").innerText = "Crawling: " + submittedUrl;
+      runCrawl(submittedUrl);
+    }
 
-    const siteTypes = {
-      ecommerce: {
-        summary: {
-          pages: "7 pages detected in this ecommerce-style demo workspace.",
-          issues: "1 broken page and 3 conversion opportunity pages flagged.",
-          tracking: "Products, pricing, cart, and checkout are the key GA4 event opportunities."
-        },
-        kpis: {
-          healthScore: "71",
-          healthNote: "Solid structure, but purchase-path instrumentation should improve."
-        },
-        defaultNodeKey: "Pricing-/pricing",
-        activities: [
-          { title: "Blueprint started", text: "URL received and workspace session initialized." },
-          { title: "Site pattern detected", text: "Ecommerce-style journey identified from URL signals." },
-          { title: "Pages mapped", text: "Homepage, products, pricing, cart, checkout, contact and a broken legacy page prepared." },
-          { title: "Issue flagged", text: "A broken legacy URL was detected in the demo sitemap model." },
-          { title: "Tracking recommendations generated", text: "Checkout, cart and pricing were prioritized for GA4 event mapping." }
-        ],
-        actions: [
-          { title: "Track checkout progression", description: "Instrument begin_checkout and step progression on the checkout path to identify abandonment.", priority: "High", targetPath: "/checkout" },
-          { title: "Fix broken legacy page", description: "Redirect the outdated page and inspect internal links or old campaign references still sending traffic there.", priority: "High", targetPath: "/old-page" },
-          { title: "Improve pricing measurement", description: "Add CTA click and decision-stage event tracking on pricing to better capture commercial intent.", priority: "Medium", targetPath: "/pricing" }
-        ],
-        nodes: [
-          { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry page for traffic and journey mapping.", color: "green", top: 50, left: 40 },
-          { name: "Products", path: "/products", status: "Healthy", eventName: "view_item_list", notes: "Track product listing visibility and engagement.", color: "green", top: 50, left: 320 },
-          { name: "Pricing", path: "/pricing", status: "Opportunity", eventName: "view_pricing", notes: "Strong decision-stage page. Track page view, CTA clicks, and downstream conversion intent.", color: "yellow", top: 50, left: 600 },
-          { name: "404 Error", path: "/old-page", status: "Broken", eventName: "error_404_view", notes: "Broken or outdated page. Investigate internal links and traffic sources.", color: "red", top: 50, left: 880 },
-          { name: "Cart", path: "/cart", status: "Opportunity", eventName: "view_cart", notes: "Track cart views and movement toward purchase.", color: "yellow", top: 260, left: 220 },
-          { name: "Checkout", path: "/checkout", status: "Opportunity", eventName: "begin_checkout", notes: "Critical revenue page. Track progression and abandonment.", color: "yellow", top: 260, left: 520 },
-          { name: "Contact", path: "/contact", status: "Healthy", eventName: "generate_lead", notes: "Useful support or lead page. Track form starts and submissions.", color: "green", top: 260, left: 840 }
-        ],
-        lines: [
-          { top: 95, left: 220, width: 100 },
-          { top: 95, left: 500, width: 100 },
-          { top: 95, left: 780, width: 100 },
-          { top: 305, left: 400, width: 120 },
-          { top: 305, left: 700, width: 140 }
-        ]
-      },
+    async function runCrawl(url) {
+      try {
+        const response = await fetch("/api/crawl?url=" + encodeURIComponent(url));
+        const data = await response.json();
 
-      leadgen: {
-        summary: {
-          pages: "6 pages detected in this lead-generation demo workspace.",
-          issues: "1 broken page and 2 high-intent opportunity pages flagged.",
-          tracking: "Services, contact, and thank-you pages are your main measurement focus."
-        },
-        kpis: {
-          healthScore: "78",
-          healthNote: "Lead path is clear, but service-page and form measurement can be tightened."
-        },
-        defaultNodeKey: "Services-/services",
-        activities: [
-          { title: "Blueprint started", text: "URL received and analysis session prepared." },
-          { title: "Site pattern detected", text: "Lead-generation structure inferred from default business-site signals." },
-          { title: "Primary journey mapped", text: "Homepage, about, services, contact and thank-you journey prepared." },
-          { title: "Conversion point found", text: "Thank-you page identified as likely lead confirmation destination." },
-          { title: "Tracking recommendations generated", text: "Services, contact and thank-you were prioritized for measurement." }
-        ],
-        actions: [
-          { title: "Track service-page intent", description: "Measure CTA interactions and content engagement on services to identify which offers drive interest.", priority: "High", targetPath: "/services" },
-          { title: "Strengthen lead attribution", description: "Ensure the thank-you page is consistently tied to generate_lead measurement and campaign reporting.", priority: "High", targetPath: "/thank-you" },
-          { title: "Repair the broken offer path", description: "Fix or redirect the legacy offer URL to reduce leakage from historical traffic sources.", priority: "Medium", targetPath: "/old-offer" }
-        ],
-        nodes: [
-          { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Primary landing page for brand entry and top-level messaging.", color: "green", top: 50, left: 60 },
-          { name: "About", path: "/about", status: "Healthy", eventName: "view_about", notes: "Trust-building page. Monitor engagement depth.", color: "green", top: 50, left: 340 },
-          { name: "Services", path: "/services", status: "Opportunity", eventName: "view_services", notes: "Core decision page for lead-gen sites. Track service page views and CTA clicks.", color: "yellow", top: 50, left: 620 },
-          { name: "404 Error", path: "/old-offer", status: "Broken", eventName: "error_404_view", notes: "Broken page likely tied to old campaigns or navigation.", color: "red", top: 50, left: 900 },
-          { name: "Contact", path: "/contact", status: "Opportunity", eventName: "form_start", notes: "High-intent page. Track form starts and completions.", color: "yellow", top: 260, left: 280 },
-          { name: "Thank You", path: "/thank-you", status: "Healthy", eventName: "generate_lead", notes: "Confirmation page. Strong conversion marker for lead tracking.", color: "green", top: 260, left: 680 }
-        ],
-        lines: [
-          { top: 95, left: 240, width: 100 },
-          { top: 95, left: 520, width: 100 },
-          { top: 95, left: 800, width: 100 },
-          { top: 305, left: 460, width: 220 }
-        ]
-      },
+        if (!response.ok) {
+          showError(data.error || "Crawler failed.");
+          return;
+        }
 
-      content: {
-        summary: {
-          pages: "6 pages detected in this content-style demo workspace.",
-          issues: "1 broken page and 2 engagement opportunity pages flagged.",
-          tracking: "Blog, article, and subscribe pages are the strongest event candidates."
-        },
-        kpis: {
-          healthScore: "75",
-          healthNote: "Content structure is usable, but engagement and subscription tracking need focus."
-        },
-        defaultNodeKey: "Blog-/blog",
-        activities: [
-          { title: "Blueprint started", text: "URL received and content-style analysis prepared." },
-          { title: "Site pattern detected", text: "Content or media structure inferred from URL signals." },
-          { title: "Content journey mapped", text: "Blog index, article page and subscription path prepared." },
-          { title: "Engagement gap identified", text: "Article and blog pages flagged for scroll and CTA tracking." },
-          { title: "Tracking recommendations generated", text: "Article views, scroll depth and subscription events prioritized." }
-        ],
-        actions: [
-          { title: "Measure article engagement", description: "Add scroll-depth and CTA interaction tracking on articles to understand true content quality.", priority: "High", targetPath: "/blog/how-to-scale" },
-          { title: "Fix outdated post path", description: "Redirect the broken old-post URL and clean up links from archives or newsletters.", priority: "High", targetPath: "/old-post" },
-          { title: "Improve subscription tracking", description: "Capture submit success and intent events on the subscribe page to connect content to list growth.", priority: "Medium", targetPath: "/subscribe" }
-        ],
-        nodes: [
-          { name: "Homepage", path: "/", status: "Healthy", eventName: "page_view", notes: "Main entry point and content discovery start.", color: "green", top: 50, left: 60 },
-          { name: "Blog", path: "/blog", status: "Opportunity", eventName: "view_blog_index", notes: "Track content browsing and progression to article pages.", color: "yellow", top: 50, left: 340 },
-          { name: "Article", path: "/blog/how-to-scale", status: "Opportunity", eventName: "view_article", notes: "High-engagement page. Track scroll depth and CTA interactions.", color: "yellow", top: 50, left: 620 },
-          { name: "404 Error", path: "/old-post", status: "Broken", eventName: "error_404_view", notes: "Outdated content URL. Fix internal linking or redirect it.", color: "red", top: 50, left: 900 },
-          { name: "Subscribe", path: "/subscribe", status: "Healthy", eventName: "sign_up", notes: "Email capture page. Track form submission and opt-in success.", color: "green", top: 260, left: 280 },
-          { name: "Contact", path: "/contact", status: "Healthy", eventName: "generate_lead", notes: "Secondary conversion point. Track form starts and completions.", color: "green", top: 260, left: 680 }
-        ],
-        lines: [
-          { top: 95, left: 240, width: 100 },
-          { top: 95, left: 520, width: 100 },
-          { top: 95, left: 800, width: 100 },
-          { top: 305, left: 460, width: 220 }
-        ]
+        crawlData = data;
+
+        document.getElementById("loadingScreen").style.display = "none";
+        document.getElementById("resultsScreen").style.display = "block";
+
+        renderResults(data);
+      } catch (error) {
+        showError("Something went wrong while calling the crawler.");
       }
-    };
-
-    function detectSiteType(rawUrl) {
-      const value = rawUrl.toLowerCase();
-
-      if (
-        value.includes("shop") ||
-        value.includes("store") ||
-        value.includes("cart") ||
-        value.includes("checkout") ||
-        value.includes("nike") ||
-        value.includes("adidas")
-      ) {
-        return "ecommerce";
-      }
-
-      if (
-        value.includes("blog") ||
-        value.includes("news") ||
-        value.includes("media") ||
-        value.includes("mag") ||
-        value.includes("article")
-      ) {
-        return "content";
-      }
-
-      return "leadgen";
     }
 
-    function getNodeKey(node) {
-      return node.name + "-" + node.path;
+    function showError(message) {
+      document.getElementById("loadingScreen").innerHTML = `
+        <div>
+          <h1>Crawl Failed</h1>
+          <p>The crawler could not complete this request.</p>
+          <div class="error-box">${message}</div>
+          <br/>
+          <button class="button" onclick="window.location.href='/'">Try Again</button>
+        </div>
+      `;
     }
 
-    function statusClass(color) {
-      if (color === "green") return "status-green";
-      if (color === "yellow") return "status-yellow";
-      return "status-red";
+    function renderResults(data) {
+      document.getElementById("siteUrl").innerText = "Website: " + data.crawledUrl;
+      document.getElementById("statusCard").innerText = "HTTP " + data.statusCode;
+      document.getElementById("titleCard").innerText = data.title || "Untitled page";
+      document.getElementById("linksCard").innerText = data.linksFound + " internal links found on the homepage.";
+
+      renderCanvas(data);
+      renderTable(data);
     }
 
-    function issueClass(color) {
-      if (color === "green") return "issue-green";
-      if (color === "yellow") return "issue-yellow";
-      return "issue-red";
-    }
-
-    function priorityClass(priority) {
-      if (priority === "High") return "badge-high";
-      if (priority === "Medium") return "badge-medium";
-      return "badge-low";
-    }
-
-    function selectNode(node) {
-      selectedNodeKey = getNodeKey(node);
-
-      document.getElementById("panelName").innerText = node.name;
-      document.getElementById("panelPath").innerText = node.path;
-      document.getElementById("panelEvent").innerText = node.eventName;
-      document.getElementById("panelNotes").innerText = node.notes;
-
-      const statusEl = document.getElementById("panelStatus");
-      statusEl.innerText = node.status;
-      statusEl.className = "status-badge " + statusClass(node.color);
-
-      renderCanvas();
-      renderIssuesTable();
-    }
-
-    function getCounts(nodes) {
-      return {
-        all: nodes.length,
-        healthy: nodes.filter(node => node.color === "green").length,
-        opportunity: nodes.filter(node => node.color === "yellow").length,
-        broken: nodes.filter(node => node.color === "red").length
-      };
-    }
-
-    function renderFilters() {
-      const filtersEl = document.getElementById("filters");
-      const counts = getCounts(currentNodes);
-
-      const filterConfig = [
-        { key: "all", label: "All", count: counts.all },
-        { key: "healthy", label: "Healthy", count: counts.healthy },
-        { key: "opportunity", label: "Opportunity", count: counts.opportunity },
-        { key: "broken", label: "Broken", count: counts.broken }
-      ];
-
-      filtersEl.innerHTML = "";
-
-      filterConfig.forEach(filter => {
-        const btn = document.createElement("button");
-        btn.className = "filter-btn" + (currentFilter === filter.key ? " active" : "");
-        btn.innerText = `${filter.label} (${filter.count})`;
-        btn.onclick = function () {
-          currentFilter = filter.key;
-          renderFilters();
-          renderCanvas();
-          renderIssuesTable();
-        };
-        filtersEl.appendChild(btn);
-      });
-    }
-
-    function shouldShowNode(node) {
-      if (currentFilter === "all") return true;
-      if (currentFilter === "healthy") return node.color === "green";
-      if (currentFilter === "opportunity") return node.color === "yellow";
-      if (currentFilter === "broken") return node.color === "red";
-      return true;
-    }
-
-    function renderCanvas() {
+    function renderCanvas(data) {
       const canvas = document.getElementById("canvas");
       canvas.innerHTML = "";
 
-      currentLines.forEach(line => {
-        const lineEl = document.createElement("div");
-        lineEl.className = "line";
-        if (currentFilter !== "all") {
-          lineEl.classList.add("hidden");
-        }
-        lineEl.style.top = line.top + "px";
-        lineEl.style.left = line.left + "px";
-        lineEl.style.width = line.width + "px";
-        canvas.appendChild(lineEl);
-      });
+      const homeNode = document.createElement("div");
+      homeNode.className = "node home active";
+      homeNode.style.top = "60px";
+      homeNode.style.left = "60px";
+      homeNode.innerHTML = `
+        <h3>Homepage</h3>
+        <p>${data.crawledUrl}</p>
+      `;
+      homeNode.onclick = function () {
+        selectNode(data.crawledUrl);
+      };
+      canvas.appendChild(homeNode);
 
-      currentNodes.forEach(node => {
-        const nodeEl = document.createElement("div");
-        nodeEl.className = "node " + node.color;
+      const links = data.links.slice(0, 12);
 
-        if (!shouldShowNode(node)) {
-          nodeEl.classList.add("hidden");
-        }
+      links.forEach((link, index) => {
+        const row = Math.floor(index / 3);
+        const col = index % 3;
 
-        if (selectedNodeKey === getNodeKey(node)) {
-          nodeEl.classList.add("selected");
-        }
+        const left = 380 + col * 280;
+        const top = 60 + row * 150;
 
-        nodeEl.style.top = node.top + "px";
-        nodeEl.style.left = node.left + "px";
+        const line = document.createElement("div");
+        line.className = "line";
+        line.style.left = "285px";
+        line.style.top = "100px";
+        line.style.width = (left - 285) + "px";
+        canvas.appendChild(line);
 
-        nodeEl.innerHTML = `
-          <h3>${node.name}</h3>
-          <p>${node.path}</p>
+        const node = document.createElement("div");
+        node.className = "node link";
+        node.style.left = left + "px";
+        node.style.top = top + "px";
+        node.innerHTML = `
+          <h3>${getPathName(link)}</h3>
+          <p>${link}</p>
         `;
 
-        nodeEl.onclick = function () {
-          selectNode(node);
+        node.onclick = function () {
+          selectNode(link);
         };
 
-        canvas.appendChild(nodeEl);
+        canvas.appendChild(node);
       });
     }
 
-    function renderIssuesTable() {
-      const body = document.getElementById("issuesTableBody");
-      body.innerHTML = "";
+    function renderTable(data) {
+      const table = document.getElementById("linksTable");
+      table.innerHTML = "";
 
-      const visibleNodes = currentNodes.filter(node => {
-        if (currentFilter === "all") {
-          return node.color !== "green";
-        }
-        return shouldShowNode(node);
-      });
+      const rows = [
+        {
+          name: "Homepage",
+          url: data.crawledUrl,
+          event: "page_view"
+        },
+        ...data.links.map(link => ({
+          name: getPathName(link),
+          url: link,
+          event: suggestEvent(link)
+        }))
+      ];
 
-      visibleNodes.forEach(node => {
-        const row = document.createElement("tr");
+      rows.forEach(row => {
+        const tr = document.createElement("tr");
 
-        if (selectedNodeKey === getNodeKey(node)) {
-          row.classList.add("selected-row");
-        }
-
-        row.onclick = function () {
-          selectNode(node);
+        tr.onclick = function () {
+          selectNode(row.url);
         };
 
-        row.innerHTML = `
-          <td>${node.name}</td>
-          <td>${node.path}</td>
-          <td><span class="issue-badge ${issueClass(node.color)}">${node.status}</span></td>
-          <td>${node.eventName}</td>
+        tr.innerHTML = `
+          <td>${row.name}</td>
+          <td>${row.url}</td>
+          <td><span class="status">Detected</span></td>
+          <td>${row.event}</td>
         `;
 
-        body.appendChild(row);
+        table.appendChild(tr);
       });
+    }
 
-      if (visibleNodes.length === 0) {
-        const emptyRow = document.createElement("tr");
-        emptyRow.innerHTML = `
-          <td colspan="4" style="color:#94a3b8;">No rows match the current filter.</td>
-        `;
-        body.appendChild(emptyRow);
+    function selectNode(url) {
+      selectedUrl = url;
+
+      const nodes = document.querySelectorAll(".node");
+      nodes.forEach(node => {
+        node.classList.remove("active");
+        if (node.innerText.includes(url)) {
+          node.classList.add("active");
+        }
+      });
+    }
+
+    function getPathName(rawUrl) {
+      try {
+        const url = new URL(rawUrl);
+        if (url.pathname === "/") return "Homepage";
+
+        const clean = url.pathname
+          .replaceAll("/", " ")
+          .replaceAll("-", " ")
+          .replaceAll("_", " ")
+          .trim();
+
+        return clean
+          ? clean.charAt(0).toUpperCase() + clean.slice(1)
+          : "Page";
+      } catch {
+        return "Page";
       }
     }
 
-    function renderActions() {
-      const actionsGrid = document.getElementById("actionsGrid");
-      actionsGrid.innerHTML = "";
+    function suggestEvent(rawUrl) {
+      const value = rawUrl.toLowerCase();
 
-      currentActions.forEach(action => {
-        const card = document.createElement("div");
-        card.className = "action-card";
+      if (value.includes("contact")) return "generate_lead";
+      if (value.includes("pricing")) return "view_pricing";
+      if (value.includes("checkout")) return "begin_checkout";
+      if (value.includes("cart")) return "view_cart";
+      if (value.includes("blog")) return "view_article";
+      if (value.includes("product")) return "view_item";
+      if (value.includes("thank")) return "generate_lead";
 
-        card.onclick = function () {
-          const targetNode = currentNodes.find(node => node.path === action.targetPath);
-          if (targetNode) {
-            selectNode(targetNode);
-            currentFilter = "all";
-            renderFilters();
-            renderCanvas();
-            renderIssuesTable();
-          }
-        };
-
-        card.innerHTML = `
-          <h3>${action.title}</h3>
-          <p>${action.description}</p>
-          <div class="action-meta">
-            <span class="action-badge ${priorityClass(action.priority)}">${action.priority} Priority</span>
-            <span class="action-link">Focus page</span>
-          </div>
-        `;
-
-        actionsGrid.appendChild(card);
-      });
+      return "page_view";
     }
 
-    function renderActivityFeed() {
-      const feed = document.getElementById("activityFeed");
-      feed.innerHTML = "";
+    function exportBlueprint() {
+      if (!crawlData) {
+        alert("No crawl data available yet.");
+        return;
+      }
 
-      currentActivities.forEach((activity, index) => {
-        const item = document.createElement("div");
-        item.className = "activity-item";
+      let report = "";
 
-        item.innerHTML = `
-          <div class="activity-dot">${index + 1}</div>
-          <div>
-            <h4>${activity.title}</h4>
-            <p>${activity.text}</p>
-          </div>
-        `;
+      report += "AUDIIANCE REAL CRAWL BLUEPRINT\n";
+      report += "==============================\n\n";
+      report += "Website: " + crawlData.crawledUrl + "\n";
+      report += "Status Code: " + crawlData.statusCode + "\n";
+      report += "Page Title: " + crawlData.title + "\n";
+      report += "Internal Links Found: " + crawlData.linksFound + "\n";
+      report += "Generated: " + new Date().toLocaleString() + "\n\n";
 
-        feed.appendChild(item);
+      report += "SITEMAP LINKS\n";
+      report += "-------------\n";
 
-        setTimeout(() => {
-          item.classList.add("show");
-        }, 250 * index);
+      crawlData.links.forEach((link, index) => {
+        report += index + 1 + ". " + link + "\n";
+        report += "Suggested Event: " + suggestEvent(link) + "\n\n";
       });
 
-      setTimeout(() => {
-        document.getElementById("activityStatus").innerText = "Complete";
-      }, 250 * currentActivities.length + 300);
+      const blob = new Blob([report], { type: "text/plain" });
+      const downloadUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = "audiiance-real-crawl-report.txt";
+      a.click();
+
+      URL.revokeObjectURL(downloadUrl);
     }
-
-    function renderKpis(config) {
-      const counts = getCounts(currentNodes);
-      const trackingGaps = currentNodes.filter(node => node.color === "yellow").length;
-
-      document.getElementById("kpiHealthScore").innerText = config.kpis.healthScore;
-      document.getElementById("kpiHealthNote").innerText = config.kpis.healthNote;
-      document.getElementById("kpiBrokenPages").innerText = counts.broken;
-      document.getElementById("kpiTrackingGaps").innerText = trackingGaps;
-      document.getElementById("kpiPriorityActions").innerText = currentActions.length;
-    }
-function exportBlueprint() {
-  const selectedSite = url;
-  const issues = currentNodes.filter(node => node.color !== "green");
-
-  let report = "";
-
-  report += "AUDIIANCE BLUEPRINT REPORT\n";
-  report += "==========================\n\n";
-  report += "Website: " + selectedSite + "\n";
-  report += "Generated: " + new Date().toLocaleString() + "\n\n";
-
-  report += "SUMMARY\n";
-  report += "-------\n";
-  report += "Pages found: " + currentNodes.length + "\n";
-  report += "Broken pages: " + currentNodes.filter(node => node.color === "red").length + "\n";
-  report += "Tracking gaps: " + currentNodes.filter(node => node.color === "yellow").length + "\n";
-  report += "Priority actions: " + currentActions.length + "\n\n";
-
-  report += "RECOMMENDED ACTIONS\n";
-  report += "-------------------\n";
-
-  currentActions.forEach((action, index) => {
-    report += index + 1 + ". " + action.title + "\n";
-    report += "Priority: " + action.priority + "\n";
-    report += "Page: " + action.targetPath + "\n";
-    report += "Details: " + action.description + "\n\n";
-  });
-
-  report += "ISSUES & OPPORTUNITIES\n";
-  report += "----------------------\n";
-
-  issues.forEach((node, index) => {
-    report += index + 1 + ". " + node.name + "\n";
-    report += "Path: " + node.path + "\n";
-    report += "Status: " + node.status + "\n";
-    report += "Suggested Event: " + node.eventName + "\n";
-    report += "Notes: " + node.notes + "\n\n";
-  });
-
-  report += "PAGE MAP\n";
-  report += "--------\n";
-
-  currentNodes.forEach((node, index) => {
-    report += index + 1 + ". " + node.name + " - " + node.path + " - " + node.status + "\n";
-  });
-
-  const blob = new Blob([report], { type: "text/plain" });
-  const downloadUrl = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = downloadUrl;
-  link.download = "audiiance-blueprint-report.txt";
-  link.click();
-
-  URL.revokeObjectURL(downloadUrl);
-}
-    function renderWorkspace(type) {
-      const config = siteTypes[type];
-
-      currentNodes = config.nodes;
-      currentLines = config.lines;
-      currentActions = config.actions;
-      currentActivities = config.activities;
-
-      document.getElementById("pagesFound").innerText = config.summary.pages;
-      document.getElementById("issuesFound").innerText = config.summary.issues;
-      document.getElementById("trackingFocus").innerText = config.summary.tracking;
-
-      renderKpis(config);
-      renderActions();
-      renderActivityFeed();
-
-      const defaultNode = currentNodes.find(node => getNodeKey(node) === config.defaultNodeKey) || currentNodes[0];
-      selectNode(defaultNode);
-      renderFilters();
-      renderCanvas();
-      renderIssuesTable();
-    }
-
-    const detectedType = detectSiteType(url);
-    renderWorkspace(detectedType);
-
-    setTimeout(() => {
-      document.getElementById("loadingScreen").style.display = "none";
-      document.getElementById("resultsScreen").style.display = "flex";
-    }, 2000);
   </script>
 </body>
 </html>
