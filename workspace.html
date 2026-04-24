@@ -515,7 +515,10 @@
             <h1>Blueprint Dashboard</h1>
             <p id="resultUrl">Website: loading...</p>
           </div>
-          <button class="button" onclick="window.location.href='/'">Run New Blueprint</button>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+  <button class="button" onclick="exportBlueprint()">Export Blueprint</button>
+  <button class="button" onclick="window.location.href='/'">Run New Blueprint</button>
+</div>
         </div>
 
         <div class="kpi-strip">
@@ -1022,7 +1025,62 @@
       document.getElementById("kpiTrackingGaps").innerText = trackingGaps;
       document.getElementById("kpiPriorityActions").innerText = currentActions.length;
     }
+function exportBlueprint() {
+  const selectedSite = url;
+  const issues = currentNodes.filter(node => node.color !== "green");
 
+  let report = "";
+
+  report += "AUDIIANCE BLUEPRINT REPORT\n";
+  report += "==========================\n\n";
+  report += "Website: " + selectedSite + "\n";
+  report += "Generated: " + new Date().toLocaleString() + "\n\n";
+
+  report += "SUMMARY\n";
+  report += "-------\n";
+  report += "Pages found: " + currentNodes.length + "\n";
+  report += "Broken pages: " + currentNodes.filter(node => node.color === "red").length + "\n";
+  report += "Tracking gaps: " + currentNodes.filter(node => node.color === "yellow").length + "\n";
+  report += "Priority actions: " + currentActions.length + "\n\n";
+
+  report += "RECOMMENDED ACTIONS\n";
+  report += "-------------------\n";
+
+  currentActions.forEach((action, index) => {
+    report += index + 1 + ". " + action.title + "\n";
+    report += "Priority: " + action.priority + "\n";
+    report += "Page: " + action.targetPath + "\n";
+    report += "Details: " + action.description + "\n\n";
+  });
+
+  report += "ISSUES & OPPORTUNITIES\n";
+  report += "----------------------\n";
+
+  issues.forEach((node, index) => {
+    report += index + 1 + ". " + node.name + "\n";
+    report += "Path: " + node.path + "\n";
+    report += "Status: " + node.status + "\n";
+    report += "Suggested Event: " + node.eventName + "\n";
+    report += "Notes: " + node.notes + "\n\n";
+  });
+
+  report += "PAGE MAP\n";
+  report += "--------\n";
+
+  currentNodes.forEach((node, index) => {
+    report += index + 1 + ". " + node.name + " - " + node.path + " - " + node.status + "\n";
+  });
+
+  const blob = new Blob([report], { type: "text/plain" });
+  const downloadUrl = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = "audiiance-blueprint-report.txt";
+  link.click();
+
+  URL.revokeObjectURL(downloadUrl);
+}
     function renderWorkspace(type) {
       const config = siteTypes[type];
 
