@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Audiiance - Connected Sitemap Graph</title>
+  <title>Audiiance - Diagnostic Sitemap Graph</title>
   <style>
     body {
       margin: 0;
@@ -63,7 +63,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -77,12 +77,38 @@
 
     .card h3 {
       margin: 0 0 10px 0;
-      font-size: 16px;
+      font-size: 14px;
+      color: #94a3b8;
     }
 
-    .card p {
+    .card strong {
+      font-size: 28px;
+      display: block;
+      color: white;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .filter {
+      background: #111827;
+      color: #cbd5e1;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
       font-size: 14px;
-      line-height: 1.5;
+    }
+
+    .filter.active {
+      background: #22d3ee;
+      color: #0f172a;
+      border-color: #22d3ee;
+      font-weight: bold;
     }
 
     .canvas-wrap {
@@ -113,7 +139,7 @@
     .edge {
       stroke: #334155;
       stroke-width: 2;
-      opacity: 0.9;
+      opacity: 0.85;
     }
 
     .edge.active {
@@ -124,7 +150,7 @@
 
     .node {
       position: absolute;
-      width: 230px;
+      width: 240px;
       padding: 16px;
       border-radius: 14px;
       background: #1e293b;
@@ -139,20 +165,19 @@
     }
 
     .node.active {
-      border-color: #22d3ee;
+      border-color: #22d3ee !important;
       box-shadow: 0 0 0 2px #22d3ee;
     }
 
-    .node.home {
-      border-color: #22c55e;
-    }
+    .node.healthy { border-color: #22c55e; }
+    .node.opportunity { border-color: #f59e0b; }
+    .node.broken { border-color: #ef4444; }
+    .node.failed { border-color: #f97316; }
+    .node.deadend { border-color: #a855f7; }
+    .node.dense { border-color: #38bdf8; }
 
-    .node.broken {
-      border-color: #ef4444;
-    }
-
-    .node.failed {
-      border-color: #f59e0b;
+    .node.hidden {
+      opacity: 0.14;
     }
 
     .node h3 {
@@ -166,9 +191,25 @@
       line-height: 1.4;
     }
 
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .badge.healthy { background: rgba(34,197,94,.15); color: #86efac; }
+    .badge.opportunity { background: rgba(245,158,11,.15); color: #fcd34d; }
+    .badge.broken { background: rgba(239,68,68,.15); color: #fca5a5; }
+    .badge.failed { background: rgba(249,115,22,.15); color: #fdba74; }
+    .badge.deadend { background: rgba(168,85,247,.15); color: #d8b4fe; }
+    .badge.dense { background: rgba(56,189,248,.15); color: #bae6fd; }
+
     .panel-grid {
       display: grid;
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: 1fr 390px;
       gap: 24px;
     }
 
@@ -182,6 +223,7 @@
 
     .details {
       padding: 20px;
+      overflow: hidden;
     }
 
     .details h2 {
@@ -245,26 +287,6 @@
       background: rgba(34, 211, 238, 0.12);
     }
 
-    .status {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(34, 197, 94, 0.15);
-      color: #86efac;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .status.broken {
-      background: rgba(239, 68, 68, 0.15);
-      color: #fca5a5;
-    }
-
-    .status.failed {
-      background: rgba(245, 158, 11, 0.15);
-      color: #fcd34d;
-    }
-
     .error-box {
       background: rgba(239, 68, 68, 0.12);
       border: 1px solid rgba(239, 68, 68, 0.4);
@@ -274,7 +296,7 @@
       margin-top: 20px;
     }
 
-    @media (max-width: 1000px) {
+    @media (max-width: 1100px) {
       .grid,
       .panel-grid {
         grid-template-columns: 1fr;
@@ -286,15 +308,15 @@
 <body>
   <div class="loading" id="loadingScreen">
     <div>
-      <h1>Connected Crawl Started</h1>
-      <p id="loadingText">Building true sitemap graph...</p>
+      <h1>Diagnostic Crawl Started</h1>
+      <p id="loadingText">Mapping pages, connections, and issues...</p>
     </div>
   </div>
 
   <div class="screen" id="resultsScreen" style="display:none;">
     <div class="topbar">
       <div>
-        <h1>Connected Sitemap Graph</h1>
+        <h1>Diagnostic Sitemap Graph</h1>
         <p id="siteUrl">Website: loading...</p>
       </div>
 
@@ -305,23 +327,15 @@
     </div>
 
     <div class="grid">
-      <div class="card">
-        <h3>Pages Crawled</h3>
-        <p id="pagesCard">Loading...</p>
-      </div>
-      <div class="card">
-        <h3>Connections</h3>
-        <p id="edgesCard">Loading...</p>
-      </div>
-      <div class="card">
-        <h3>Homepage Title</h3>
-        <p id="titleCard">Loading...</p>
-      </div>
-      <div class="card">
-        <h3>Tracking Signals</h3>
-        <p id="eventsCard">Loading...</p>
-      </div>
+      <div class="card"><h3>Pages</h3><strong id="totalPages">--</strong></div>
+      <div class="card"><h3>Connections</h3><strong id="totalEdges">--</strong></div>
+      <div class="card"><h3>Healthy</h3><strong id="healthyCount">--</strong></div>
+      <div class="card"><h3>Opportunities</h3><strong id="opportunityCount">--</strong></div>
+      <div class="card"><h3>Broken/Failed</h3><strong id="brokenCount">--</strong></div>
+      <div class="card"><h3>Dead Ends</h3><strong id="deadEndCount">--</strong></div>
     </div>
+
+    <div class="filters" id="filters"></div>
 
     <div class="canvas-wrap">
       <div class="canvas" id="canvas">
@@ -335,9 +349,9 @@
           <thead>
             <tr>
               <th>Page</th>
-              <th>URL</th>
-              <th>Status</th>
-              <th>Outbound Links</th>
+              <th>Type</th>
+              <th>Diagnosis</th>
+              <th>Priority</th>
               <th>Suggested Event</th>
             </tr>
           </thead>
@@ -346,7 +360,7 @@
       </div>
 
       <div class="details">
-        <h2>Page Details</h2>
+        <h2>Diagnosis Details</h2>
 
         <div class="detail-block">
           <div class="label">Page</div>
@@ -359,8 +373,23 @@
         </div>
 
         <div class="detail-block">
-          <div class="label">Status</div>
-          <div class="value" id="detailStatus">No status yet</div>
+          <div class="label">Page Type</div>
+          <div class="value" id="detailType">No page type yet</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Diagnosis</div>
+          <div class="value" id="detailDiagnosis">No diagnosis yet</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Issue</div>
+          <div class="value" id="detailIssue">No issue yet</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Recommendation</div>
+          <div class="value" id="detailRecommendation">No recommendation yet</div>
         </div>
 
         <div class="detail-block">
@@ -382,11 +411,12 @@
 
     let crawlData = null;
     let selectedUrl = "";
+    let currentFilter = "all";
 
     if (!submittedUrl) {
       showError("No URL was provided. Go back and enter a website URL.");
     } else {
-      document.getElementById("loadingText").innerText = "Crawling and connecting: " + submittedUrl;
+      document.getElementById("loadingText").innerText = "Crawling and diagnosing: " + submittedUrl;
       runCrawl(submittedUrl);
     }
 
@@ -400,7 +430,7 @@
           return;
         }
 
-        crawlData = normalizeCrawlData(data);
+        crawlData = data;
 
         document.getElementById("loadingScreen").style.display = "none";
         document.getElementById("resultsScreen").style.display = "block";
@@ -409,20 +439,6 @@
       } catch {
         showError("Something went wrong while calling the crawler.");
       }
-    }
-
-    function normalizeCrawlData(data) {
-      if (Array.isArray(data.pages) && Array.isArray(data.edges)) {
-        return data;
-      }
-
-      return {
-        crawledUrl: data.crawledUrl,
-        pagesCrawled: data.pagesCrawled || 1,
-        linksFound: data.linksFound || 0,
-        pages: data.pages || [],
-        edges: []
-      };
     }
 
     function showError(message) {
@@ -438,56 +454,97 @@
     }
 
     function renderResults(data) {
-      const homepage = data.pages[0];
-
       document.getElementById("siteUrl").innerText = "Website: " + data.crawledUrl;
-      document.getElementById("pagesCard").innerText = data.pagesCrawled + " pages crawled.";
-      document.getElementById("edgesCard").innerText = data.edges.length + " page-to-page connections mapped.";
-      document.getElementById("titleCard").innerText = homepage?.title || "Untitled homepage";
 
-      const signalCount = data.pages.filter(page => page.suggestedEvent !== "page_view").length;
-      document.getElementById("eventsCard").innerText = signalCount + " pages have stronger event recommendations.";
+      const summary = data.summary || {};
+      document.getElementById("totalPages").innerText = summary.totalPages || data.pages.length;
+      document.getElementById("totalEdges").innerText = summary.totalEdges || data.edges.length;
+      document.getElementById("healthyCount").innerText = summary.healthy || 0;
+      document.getElementById("opportunityCount").innerText = summary.opportunities || 0;
+      document.getElementById("brokenCount").innerText = (summary.broken || 0) + (summary.failed || 0);
+      document.getElementById("deadEndCount").innerText = summary.deadEnds || 0;
 
-      renderGraph(data);
-      renderTable(data);
+      renderFilters();
+      renderGraph();
+      renderTable();
 
-      if (homepage) {
-        selectPage(homepage.url);
-      }
+      if (data.pages[0]) selectPage(data.pages[0].url);
     }
 
-    function renderGraph(data) {
+    function renderFilters() {
+      const filters = [
+        { key: "all", label: "All" },
+        { key: "Healthy", label: "Healthy" },
+        { key: "Opportunity", label: "Opportunities" },
+        { key: "Broken", label: "Broken" },
+        { key: "Failed", label: "Failed" },
+        { key: "Dead End", label: "Dead Ends" },
+        { key: "Dense Page", label: "Dense Pages" }
+      ];
+
+      const wrap = document.getElementById("filters");
+      wrap.innerHTML = "";
+
+      filters.forEach(filter => {
+        const btn = document.createElement("button");
+        btn.className = "filter" + (currentFilter === filter.key ? " active" : "");
+        btn.innerText = filter.label;
+        btn.onclick = function () {
+          currentFilter = filter.key;
+          renderFilters();
+          renderGraph();
+          renderTable();
+        };
+        wrap.appendChild(btn);
+      });
+    }
+
+    function visibleByFilter(page) {
+      if (currentFilter === "all") return true;
+      return page.diagnosis === currentFilter;
+    }
+
+    function renderGraph() {
       const canvas = document.getElementById("canvas");
       const svg = document.getElementById("edgeSvg");
 
       canvas.querySelectorAll(".node").forEach(node => node.remove());
       svg.innerHTML = "";
 
-      const positions = calculatePositions(data.pages);
+      const pages = crawlData.pages || [];
+      const positions = calculatePositions(pages);
 
-      data.edges.forEach(edge => {
+      crawlData.edges.forEach(edge => {
         const from = positions[edge.from];
         const to = positions[edge.to];
-
         if (!from || !to) return;
 
+        const fromPage = pages.find(page => page.url === edge.from);
+        const toPage = pages.find(page => page.url === edge.to);
+
+        const faded = !visibleByFilter(fromPage) || !visibleByFilter(toPage);
+
         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", from.x + 115);
-        line.setAttribute("y1", from.y + 45);
-        line.setAttribute("x2", to.x + 115);
-        line.setAttribute("y2", to.y + 45);
+        line.setAttribute("x1", from.x + 120);
+        line.setAttribute("y1", from.y + 50);
+        line.setAttribute("x2", to.x + 120);
+        line.setAttribute("y2", to.y + 50);
         line.setAttribute("class", "edge");
         line.setAttribute("data-from", edge.from);
         line.setAttribute("data-to", edge.to);
 
+        if (faded) line.style.opacity = "0.12";
+
         svg.appendChild(line);
       });
 
-      data.pages.forEach((page, index) => {
+      pages.forEach((page, index) => {
         const position = positions[page.url];
 
         const node = document.createElement("div");
         node.className = getNodeClass(page, index === 0);
+        if (!visibleByFilter(page)) node.classList.add("hidden");
+
         node.style.left = position.x + "px";
         node.style.top = position.y + "px";
         node.setAttribute("data-url", page.url);
@@ -495,6 +552,7 @@
         node.innerHTML = `
           <h3>${index === 0 ? "Homepage" : getPathName(page.url)}</h3>
           <p>${page.url}</p>
+          <span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span>
         `;
 
         node.onclick = function () {
@@ -518,36 +576,38 @@
         const row = Math.floor((index - 1) / 3);
 
         positions[page.url] = {
-          x: 390 + col * 270,
-          y: 80 + row * 160
+          x: 390 + col * 285,
+          y: 80 + row * 170
         };
       });
 
       return positions;
     }
 
-    function renderTable(data) {
+    function renderTable() {
       const table = document.getElementById("pagesTable");
       table.innerHTML = "";
 
-      data.pages.forEach(page => {
-        const tr = document.createElement("tr");
-        tr.setAttribute("data-url", page.url);
+      crawlData.pages
+        .filter(visibleByFilter)
+        .forEach(page => {
+          const tr = document.createElement("tr");
+          tr.setAttribute("data-url", page.url);
 
-        tr.onclick = function () {
-          selectPage(page.url);
-        };
+          tr.onclick = function () {
+            selectPage(page.url);
+          };
 
-        tr.innerHTML = `
-          <td>${getPathName(page.url)}</td>
-          <td>${page.url}</td>
-          <td><span class="${getStatusClass(page.status)}">${page.status}</span></td>
-          <td>${page.links.length}</td>
-          <td>${page.suggestedEvent}</td>
-        `;
+          tr.innerHTML = `
+            <td>${getPathName(page.url)}</td>
+            <td>${page.pageType}</td>
+            <td><span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span></td>
+            <td>${page.priority}</td>
+            <td>${page.suggestedEvent}</td>
+          `;
 
-        table.appendChild(tr);
-      });
+          table.appendChild(tr);
+        });
     }
 
     function selectPage(url) {
@@ -575,7 +635,10 @@
 
       document.getElementById("detailName").innerText = getPathName(page.url);
       document.getElementById("detailUrl").innerText = page.url;
-      document.getElementById("detailStatus").innerHTML = `<span class="${getStatusClass(page.status)}">${page.status}</span>`;
+      document.getElementById("detailType").innerText = page.pageType;
+      document.getElementById("detailDiagnosis").innerHTML = `<span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span>`;
+      document.getElementById("detailIssue").innerText = page.issue;
+      document.getElementById("detailRecommendation").innerText = page.recommendation;
       document.getElementById("detailEvent").innerText = page.suggestedEvent;
       document.getElementById("detailConnections").innerText = outgoing.length
         ? outgoing.join(", ")
@@ -583,18 +646,19 @@
     }
 
     function getNodeClass(page, isHome) {
-      let base = isHome ? "node home" : "node";
-
-      if (page.status === "Broken") base += " broken";
-      if (page.status === "Failed") base += " failed";
-
+      let base = isHome ? "node healthy" : "node";
+      base += " " + getDiagnosisClass(page.diagnosis);
       return base;
     }
 
-    function getStatusClass(status) {
-      if (status === "Broken") return "status broken";
-      if (status === "Failed") return "status failed";
-      return "status";
+    function getDiagnosisClass(diagnosis) {
+      if (diagnosis === "Healthy") return "healthy";
+      if (diagnosis === "Opportunity") return "opportunity";
+      if (diagnosis === "Broken") return "broken";
+      if (diagnosis === "Failed") return "failed";
+      if (diagnosis === "Dead End") return "deadend";
+      if (diagnosis === "Dense Page") return "dense";
+      return "healthy";
     }
 
     function getPathName(rawUrl) {
@@ -608,9 +672,7 @@
           .replaceAll("_", " ")
           .trim();
 
-        return clean
-          ? clean.charAt(0).toUpperCase() + clean.slice(1)
-          : "Page";
+        return clean ? clean.charAt(0).toUpperCase() + clean.slice(1) : "Page";
       } catch {
         return "Page";
       }
@@ -624,13 +686,16 @@
 
       let report = "";
 
-      report += "AUDIIANCE CONNECTED SITEMAP BLUEPRINT\n";
-      report += "=====================================\n\n";
+      report += "AUDIIANCE DIAGNOSTIC SITEMAP BLUEPRINT\n";
+      report += "======================================\n\n";
       report += "Website: " + crawlData.crawledUrl + "\n";
       report += "Pages Crawled: " + crawlData.pagesCrawled + "\n";
       report += "Connections Mapped: " + crawlData.edges.length + "\n";
-      report += "Internal Links Found: " + crawlData.linksFound + "\n";
       report += "Generated: " + new Date().toLocaleString() + "\n\n";
+
+      report += "DIAGNOSTIC SUMMARY\n";
+      report += "------------------\n";
+      report += JSON.stringify(crawlData.summary, null, 2) + "\n\n";
 
       report += "PAGES\n";
       report += "-----\n";
@@ -638,8 +703,11 @@
       crawlData.pages.forEach((page, index) => {
         report += index + 1 + ". " + page.url + "\n";
         report += "Title: " + page.title + "\n";
-        report += "HTTP Status: " + page.statusCode + "\n";
-        report += "Page Status: " + page.status + "\n";
+        report += "Type: " + page.pageType + "\n";
+        report += "Diagnosis: " + page.diagnosis + "\n";
+        report += "Priority: " + page.priority + "\n";
+        report += "Issue: " + page.issue + "\n";
+        report += "Recommendation: " + page.recommendation + "\n";
         report += "Suggested Event: " + page.suggestedEvent + "\n";
         report += "Outbound Links: " + page.links.length + "\n\n";
       });
@@ -656,7 +724,7 @@
 
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = "audiiance-connected-sitemap-report.txt";
+      a.download = "audiiance-diagnostic-sitemap-report.txt";
       a.click();
 
       URL.revokeObjectURL(downloadUrl);
