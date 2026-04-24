@@ -1,13 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Audiiance - Real Crawl Workspace</title>
+  <title>Audiiance - Connected Sitemap Graph</title>
   <style>
     body {
       margin: 0;
       background: #0f172a;
       color: white;
       font-family: Arial, sans-serif;
+    }
+
+    .loading {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px;
+      box-sizing: border-box;
+    }
+
+    .loading h1 {
+      font-size: 46px;
+      margin-bottom: 12px;
+    }
+
+    .loading p,
+    p {
+      color: #94a3b8;
+      margin: 0;
     }
 
     .screen {
@@ -30,11 +51,6 @@
       font-size: 34px;
     }
 
-    p {
-      margin: 0;
-      color: #94a3b8;
-    }
-
     .button {
       background: #22d3ee;
       color: #0f172a;
@@ -47,7 +63,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -69,25 +85,53 @@
       line-height: 1.5;
     }
 
-    .canvas {
-      position: relative;
-      min-height: 620px;
+    .canvas-wrap {
       background: #111827;
       border: 1px solid #1f2937;
       border-radius: 20px;
-      overflow: hidden;
+      overflow: auto;
       margin-bottom: 24px;
+    }
+
+    .canvas {
+      position: relative;
+      min-width: 1200px;
+      min-height: 720px;
+      background:
+        radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.18) 1px, transparent 0);
+      background-size: 28px 28px;
+    }
+
+    svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .edge {
+      stroke: #334155;
+      stroke-width: 2;
+      opacity: 0.9;
+    }
+
+    .edge.active {
+      stroke: #22d3ee;
+      stroke-width: 3;
+      opacity: 1;
     }
 
     .node {
       position: absolute;
-      width: 220px;
+      width: 230px;
       padding: 16px;
       border-radius: 14px;
       background: #1e293b;
       border: 1px solid #334155;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
       cursor: pointer;
+      box-sizing: border-box;
     }
 
     .node:hover {
@@ -103,12 +147,12 @@
       border-color: #22c55e;
     }
 
-    .node.link {
-      border-color: #f59e0b;
-    }
-
     .node.broken {
       border-color: #ef4444;
+    }
+
+    .node.failed {
+      border-color: #f59e0b;
     }
 
     .node h3 {
@@ -119,20 +163,56 @@
     .node p {
       font-size: 13px;
       word-break: break-word;
+      line-height: 1.4;
     }
 
-    .line {
-      position: absolute;
-      height: 2px;
-      background: #334155;
-      transform-origin: left center;
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
     }
 
-    .table-wrap {
+    .table-wrap,
+    .details {
       background: #111827;
       border: 1px solid #1f2937;
       border-radius: 20px;
       overflow: hidden;
+    }
+
+    .details {
+      padding: 20px;
+    }
+
+    .details h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .detail-block {
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+
+    .detail-block:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      color: white;
+      font-size: 15px;
+      line-height: 1.5;
+      word-break: break-word;
     }
 
     table {
@@ -161,6 +241,10 @@
       background: rgba(34, 211, 238, 0.06);
     }
 
+    tr.active-row {
+      background: rgba(34, 211, 238, 0.12);
+    }
+
     .status {
       display: inline-block;
       padding: 6px 10px;
@@ -181,21 +265,6 @@
       color: #fcd34d;
     }
 
-    .loading {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 32px;
-      box-sizing: border-box;
-    }
-
-    .loading h1 {
-      font-size: 46px;
-      margin-bottom: 12px;
-    }
-
     .error-box {
       background: rgba(239, 68, 68, 0.12);
       border: 1px solid rgba(239, 68, 68, 0.4);
@@ -205,24 +274,10 @@
       margin-top: 20px;
     }
 
-    @media (max-width: 900px) {
-      .grid {
+    @media (max-width: 1000px) {
+      .grid,
+      .panel-grid {
         grid-template-columns: 1fr;
-      }
-
-      .node {
-        position: relative;
-        top: auto !important;
-        left: auto !important;
-        margin: 16px;
-      }
-
-      .line {
-        display: none;
-      }
-
-      .canvas {
-        padding: 1px;
       }
     }
   </style>
@@ -231,15 +286,15 @@
 <body>
   <div class="loading" id="loadingScreen">
     <div>
-      <h1>Real Crawl Started</h1>
-      <p id="loadingText">Fetching website structure...</p>
+      <h1>Connected Crawl Started</h1>
+      <p id="loadingText">Building true sitemap graph...</p>
     </div>
   </div>
 
   <div class="screen" id="resultsScreen" style="display:none;">
     <div class="topbar">
       <div>
-        <h1>Real Sitemap Preview</h1>
+        <h1>Connected Sitemap Graph</h1>
         <p id="siteUrl">Website: loading...</p>
       </div>
 
@@ -254,33 +309,70 @@
         <h3>Pages Crawled</h3>
         <p id="pagesCard">Loading...</p>
       </div>
-
+      <div class="card">
+        <h3>Connections</h3>
+        <p id="edgesCard">Loading...</p>
+      </div>
       <div class="card">
         <h3>Homepage Title</h3>
         <p id="titleCard">Loading...</p>
       </div>
-
       <div class="card">
-        <h3>Internal Links Found</h3>
-        <p id="linksCard">Loading...</p>
+        <h3>Tracking Signals</h3>
+        <p id="eventsCard">Loading...</p>
       </div>
     </div>
 
-    <div class="canvas" id="canvas"></div>
+    <div class="canvas-wrap">
+      <div class="canvas" id="canvas">
+        <svg id="edgeSvg"></svg>
+      </div>
+    </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Page</th>
-            <th>URL</th>
-            <th>Status</th>
-            <th>HTTP</th>
-            <th>Suggested Event</th>
-          </tr>
-        </thead>
-        <tbody id="linksTable"></tbody>
-      </table>
+    <div class="panel-grid">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Page</th>
+              <th>URL</th>
+              <th>Status</th>
+              <th>Outbound Links</th>
+              <th>Suggested Event</th>
+            </tr>
+          </thead>
+          <tbody id="pagesTable"></tbody>
+        </table>
+      </div>
+
+      <div class="details">
+        <h2>Page Details</h2>
+
+        <div class="detail-block">
+          <div class="label">Page</div>
+          <div class="value" id="detailName">Select a page</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">URL</div>
+          <div class="value" id="detailUrl">No page selected</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Status</div>
+          <div class="value" id="detailStatus">No status yet</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Suggested Event</div>
+          <div class="value" id="detailEvent">No event yet</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Connected To</div>
+          <div class="value" id="detailConnections">No connections yet</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -294,7 +386,7 @@
     if (!submittedUrl) {
       showError("No URL was provided. Go back and enter a website URL.");
     } else {
-      document.getElementById("loadingText").innerText = "Crawling: " + submittedUrl;
+      document.getElementById("loadingText").innerText = "Crawling and connecting: " + submittedUrl;
       runCrawl(submittedUrl);
     }
 
@@ -314,30 +406,22 @@
         document.getElementById("resultsScreen").style.display = "block";
 
         renderResults(crawlData);
-      } catch (error) {
+      } catch {
         showError("Something went wrong while calling the crawler.");
       }
     }
 
     function normalizeCrawlData(data) {
-      if (Array.isArray(data.pages)) {
+      if (Array.isArray(data.pages) && Array.isArray(data.edges)) {
         return data;
       }
 
       return {
         crawledUrl: data.crawledUrl,
-        pagesCrawled: 1,
+        pagesCrawled: data.pagesCrawled || 1,
         linksFound: data.linksFound || 0,
-        pages: [
-          {
-            url: data.crawledUrl,
-            statusCode: data.statusCode,
-            title: data.title,
-            links: data.links || [],
-            suggestedEvent: "page_view",
-            status: "Detected"
-          }
-        ]
+        pages: data.pages || [],
+        edges: []
       };
     }
 
@@ -357,123 +441,154 @@
       const homepage = data.pages[0];
 
       document.getElementById("siteUrl").innerText = "Website: " + data.crawledUrl;
-      document.getElementById("pagesCard").innerText = data.pagesCrawled + " pages crawled across the site.";
-      document.getElementById("titleCard").innerText = homepage && homepage.title ? homepage.title : "Untitled homepage";
-      document.getElementById("linksCard").innerText = data.linksFound + " unique internal links discovered.";
+      document.getElementById("pagesCard").innerText = data.pagesCrawled + " pages crawled.";
+      document.getElementById("edgesCard").innerText = data.edges.length + " page-to-page connections mapped.";
+      document.getElementById("titleCard").innerText = homepage?.title || "Untitled homepage";
 
-      renderCanvas(data);
+      const signalCount = data.pages.filter(page => page.suggestedEvent !== "page_view").length;
+      document.getElementById("eventsCard").innerText = signalCount + " pages have stronger event recommendations.";
+
+      renderGraph(data);
       renderTable(data);
+
+      if (homepage) {
+        selectPage(homepage.url);
+      }
     }
 
-    function renderCanvas(data) {
+    function renderGraph(data) {
       const canvas = document.getElementById("canvas");
-      canvas.innerHTML = "";
+      const svg = document.getElementById("edgeSvg");
 
-      const pages = data.pages || [];
-      if (pages.length === 0) {
-        canvas.innerHTML = "<p style='padding:24px;'>No pages were returned from the crawler.</p>";
-        return;
-      }
+      canvas.querySelectorAll(".node").forEach(node => node.remove());
+      svg.innerHTML = "";
 
-      const homepage = pages[0];
+      const positions = calculatePositions(data.pages);
 
-      const homeNode = document.createElement("div");
-      homeNode.className = getNodeClass(homepage, true) + " active";
-      homeNode.style.top = "60px";
-      homeNode.style.left = "60px";
-      homeNode.innerHTML = `
-        <h3>Homepage</h3>
-        <p>${homepage.url}</p>
-      `;
-      homeNode.onclick = function () {
-        selectNode(homepage.url);
-      };
-      canvas.appendChild(homeNode);
+      data.edges.forEach(edge => {
+        const from = positions[edge.from];
+        const to = positions[edge.to];
 
-      const childPages = pages.slice(1, 13);
+        if (!from || !to) return;
 
-      childPages.forEach((page, index) => {
-        const row = Math.floor(index / 3);
-        const col = index % 3;
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", from.x + 115);
+        line.setAttribute("y1", from.y + 45);
+        line.setAttribute("x2", to.x + 115);
+        line.setAttribute("y2", to.y + 45);
+        line.setAttribute("class", "edge");
+        line.setAttribute("data-from", edge.from);
+        line.setAttribute("data-to", edge.to);
 
-        const left = 380 + col * 280;
-        const top = 60 + row * 150;
+        svg.appendChild(line);
+      });
 
-        const line = document.createElement("div");
-        line.className = "line";
-        line.style.left = "285px";
-        line.style.top = "100px";
-        line.style.width = Math.max(80, left - 285) + "px";
-        canvas.appendChild(line);
+      data.pages.forEach((page, index) => {
+        const position = positions[page.url];
 
         const node = document.createElement("div");
-        node.className = getNodeClass(page, false);
-        node.style.left = left + "px";
-        node.style.top = top + "px";
+        node.className = getNodeClass(page, index === 0);
+        node.style.left = position.x + "px";
+        node.style.top = position.y + "px";
+        node.setAttribute("data-url", page.url);
+
         node.innerHTML = `
-          <h3>${getPathName(page.url)}</h3>
+          <h3>${index === 0 ? "Homepage" : getPathName(page.url)}</h3>
           <p>${page.url}</p>
         `;
 
         node.onclick = function () {
-          selectNode(page.url);
+          selectPage(page.url);
         };
 
         canvas.appendChild(node);
       });
     }
 
+    function calculatePositions(pages) {
+      const positions = {};
+
+      pages.forEach((page, index) => {
+        if (index === 0) {
+          positions[page.url] = { x: 60, y: 300 };
+          return;
+        }
+
+        const col = (index - 1) % 3;
+        const row = Math.floor((index - 1) / 3);
+
+        positions[page.url] = {
+          x: 390 + col * 270,
+          y: 80 + row * 160
+        };
+      });
+
+      return positions;
+    }
+
     function renderTable(data) {
-      const table = document.getElementById("linksTable");
+      const table = document.getElementById("pagesTable");
       table.innerHTML = "";
 
-      const rows = data.pages.map(page => ({
-        name: getPathName(page.url),
-        url: page.url,
-        event: page.suggestedEvent || suggestEvent(page.url),
-        status: page.status || "Detected",
-        statusCode: page.statusCode || 0
-      }));
-
-      rows.forEach(row => {
+      data.pages.forEach(page => {
         const tr = document.createElement("tr");
+        tr.setAttribute("data-url", page.url);
 
         tr.onclick = function () {
-          selectNode(row.url);
+          selectPage(page.url);
         };
 
         tr.innerHTML = `
-          <td>${row.name}</td>
-          <td>${row.url}</td>
-          <td><span class="${getStatusClass(row.status)}">${row.status}</span></td>
-          <td>${row.statusCode}</td>
-          <td>${row.event}</td>
+          <td>${getPathName(page.url)}</td>
+          <td>${page.url}</td>
+          <td><span class="${getStatusClass(page.status)}">${page.status}</span></td>
+          <td>${page.links.length}</td>
+          <td>${page.suggestedEvent}</td>
         `;
 
         table.appendChild(tr);
       });
     }
 
-    function selectNode(url) {
+    function selectPage(url) {
       selectedUrl = url;
 
-      const nodes = document.querySelectorAll(".node");
-      nodes.forEach(node => {
-        node.classList.remove("active");
-        if (node.innerText.includes(url)) {
-          node.classList.add("active");
-        }
+      document.querySelectorAll(".node").forEach(node => {
+        node.classList.toggle("active", node.getAttribute("data-url") === url);
       });
+
+      document.querySelectorAll("tr[data-url]").forEach(row => {
+        row.classList.toggle("active-row", row.getAttribute("data-url") === url);
+      });
+
+      document.querySelectorAll(".edge").forEach(edge => {
+        const isActive = edge.getAttribute("data-from") === url || edge.getAttribute("data-to") === url;
+        edge.classList.toggle("active", isActive);
+      });
+
+      const page = crawlData.pages.find(item => item.url === url);
+      if (!page) return;
+
+      const outgoing = crawlData.edges
+        .filter(edge => edge.from === url)
+        .map(edge => getPathName(edge.to));
+
+      document.getElementById("detailName").innerText = getPathName(page.url);
+      document.getElementById("detailUrl").innerText = page.url;
+      document.getElementById("detailStatus").innerHTML = `<span class="${getStatusClass(page.status)}">${page.status}</span>`;
+      document.getElementById("detailEvent").innerText = page.suggestedEvent;
+      document.getElementById("detailConnections").innerText = outgoing.length
+        ? outgoing.join(", ")
+        : "No crawled outgoing connections.";
     }
 
     function getNodeClass(page, isHome) {
-      let baseClass = isHome ? "node home" : "node link";
+      let base = isHome ? "node home" : "node";
 
-      if (page.status === "Broken" || page.statusCode >= 400) {
-        baseClass += " broken";
-      }
+      if (page.status === "Broken") base += " broken";
+      if (page.status === "Failed") base += " failed";
 
-      return baseClass;
+      return base;
     }
 
     function getStatusClass(status) {
@@ -501,22 +616,6 @@
       }
     }
 
-    function suggestEvent(rawUrl) {
-      const value = rawUrl.toLowerCase();
-
-      if (value.includes("contact")) return "generate_lead";
-      if (value.includes("pricing")) return "view_pricing";
-      if (value.includes("checkout")) return "begin_checkout";
-      if (value.includes("cart")) return "view_cart";
-      if (value.includes("blog")) return "view_article";
-      if (value.includes("product")) return "view_item";
-      if (value.includes("thank")) return "generate_lead";
-      if (value.includes("demo")) return "generate_lead";
-      if (value.includes("book")) return "generate_lead";
-
-      return "page_view";
-    }
-
     function exportBlueprint() {
       if (!crawlData) {
         alert("No crawl data available yet.");
@@ -525,23 +624,31 @@
 
       let report = "";
 
-      report += "AUDIIANCE REAL CRAWL BLUEPRINT\n";
-      report += "==============================\n\n";
+      report += "AUDIIANCE CONNECTED SITEMAP BLUEPRINT\n";
+      report += "=====================================\n\n";
       report += "Website: " + crawlData.crawledUrl + "\n";
       report += "Pages Crawled: " + crawlData.pagesCrawled + "\n";
+      report += "Connections Mapped: " + crawlData.edges.length + "\n";
       report += "Internal Links Found: " + crawlData.linksFound + "\n";
       report += "Generated: " + new Date().toLocaleString() + "\n\n";
 
-      report += "CRAWLED PAGES\n";
-      report += "-------------\n";
+      report += "PAGES\n";
+      report += "-----\n";
 
       crawlData.pages.forEach((page, index) => {
         report += index + 1 + ". " + page.url + "\n";
         report += "Title: " + page.title + "\n";
         report += "HTTP Status: " + page.statusCode + "\n";
         report += "Page Status: " + page.status + "\n";
-        report += "Suggested Event: " + (page.suggestedEvent || suggestEvent(page.url)) + "\n";
-        report += "Links Found On Page: " + page.links.length + "\n\n";
+        report += "Suggested Event: " + page.suggestedEvent + "\n";
+        report += "Outbound Links: " + page.links.length + "\n\n";
+      });
+
+      report += "CONNECTIONS\n";
+      report += "-----------\n";
+
+      crawlData.edges.forEach((edge, index) => {
+        report += index + 1 + ". " + edge.from + " -> " + edge.to + "\n";
       });
 
       const blob = new Blob([report], { type: "text/plain" });
@@ -549,7 +656,7 @@
 
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = "audiiance-real-crawl-report.txt";
+      a.download = "audiiance-connected-sitemap-report.txt";
       a.click();
 
       URL.revokeObjectURL(downloadUrl);
