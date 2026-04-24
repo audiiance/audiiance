@@ -31,10 +31,9 @@ export default async function handler(request, response) {
       visited.add(currentUrl);
 
       const pageData = await crawlPage(currentUrl, startUrl.hostname);
-      const diagnosedPage = diagnosePage(pageData);
-      pages.push(diagnosedPage);
+      pages.push(pageData);
 
-      diagnosedPage.links.forEach(link => {
+      pageData.links.forEach(link => {
         edges.push({ from: currentUrl, to: link });
 
         if (!visited.has(link) && queue.length + pages.length < maxPages) {
@@ -44,20 +43,21 @@ export default async function handler(request, response) {
     }
 
     const crawledUrls = new Set(pages.map(page => page.url));
-
     const filteredEdges = edges.filter(edge =>
       crawledUrls.has(edge.from) && crawledUrls.has(edge.to)
     );
 
-    const summary = buildSummary(pages, filteredEdges);
+    const diagnosedPages = pages.map(page => diagnosePage(page));
+
+    const summary = buildSummary(diagnosedPages, filteredEdges);
 
     return response.status(200).json({
       crawledUrl: normalizeUrl(startUrl.href),
-      pagesCrawled: pages.length,
-      pages,
-      edges: filteredEdges,
+      pagesCrawled: diagnosedPages.length,
       linksFound: [...new Set(pages.flatMap(page => page.links))].length,
-      summary
+      edges: filteredEdges,
+      summary,
+      pages: diagnosedPages
     });
 
   } catch (error) {
@@ -138,103 +138,87 @@ async function crawlPage(pageUrl, rootHostname) {
 }
 
 function diagnosePage(page) {
-  const pageType = detectPageType(page.url);
-  const outboundCount = page.links.length;
+  const url = page.url.toLowerCase();
+  const linkCount = page.links.length;
 
+  let pageType = "Standard Page";
+  let diagnosis = "Healthy";
   let riskLevel = "Low";
   let issue = "No major issue detected.";
   let recommendation = "Keep this page monitored as part of the sitemap.";
+  let priority = "Low";
 
-  if (page.status === "Failed") {
+  if (page.status === "Failed" || page.statusCode === 0) {
+    diagnosis = "Failed";
     riskLevel = "High";
-    issue = "Crawler could not access this page.";
-    recommendation = "Check whether this page blocks crawlers, requires authentication, or has server issues.";
-  } else if (page.status === "Broken" || page.statusCode >= 400) {
+    issue = "The crawler could not access this page.";
+    recommendation = "Check whether the page blocks bots, requires JavaScript, or has server/network restrictions.";
+    priority = "High";
+  } else if (page.statusCode >= 400) {
+    diagnosis = "Broken";
     riskLevel = "High";
     issue = "This page returned an error status.";
-    recommendation = "Fix the page, redirect it, or remove links pointing to it.";
-  } else if (outboundCount === 0) {
+    recommendation = "Fix the page, update internal links, or add a redirect.";
+    priority = "High";
+  } else if (
+    url.includes("contact") ||
+    url.includes("thank") ||
+    url.includes("demo") ||
+    url.includes("book") ||
+    url.includes("checkout") ||
+    url.includes("cart") ||
+    url.includes("pricing")
+  ) {
+    diagnosis = "Opportunity";
     riskLevel = "Medium";
-    issue = "This page appears to be a dead end.";
-    recommendation = "Add clear next steps, internal links, or conversion paths.";
-  } else if (pageType === "Conversion") {
-    riskLevel = "Medium";
-    issue = "This looks like a conversion-intent page.";
+    issue = "This looks like a high-intent page.";
     recommendation = "Prioritize GA4 event tracking and CTA measurement here.";
-  } else if (pageType === "Commerce") {
+    priority = "High";
+  } else if (linkCount === 0) {
+    diagnosis = "Dead End";
     riskLevel = "Medium";
-    issue = "This looks like a commerce or purchase-path page.";
-    recommendation = "Track product, cart, checkout, and purchase-intent events.";
-  } else if (pageType === "Content") {
-    riskLevel = "Low";
-    issue = "This looks like a content page.";
-    recommendation = "Track scroll depth, article engagement, and CTA clicks.";
-  } else if (outboundCount > 20) {
+    issue = "This page has no detected internal outbound links.";
+    recommendation = "Check whether users have a clear next step from this page.";
+    priority = "Medium";
+  } else if (linkCount > 20) {
+    diagnosis = "Dense Page";
     riskLevel = "Medium";
-    issue = "This page has many outbound internal links.";
-    recommendation = "Review whether users have too many choices or unclear next steps.";
+    issue = "This page has many internal links.";
+    recommendation = "Review whether the page creates too many navigation choices.";
+    priority = "Medium";
   }
+
+  if (url.includes("pricing")) pageType = "Pricing Page";
+  else if (url.includes("contact")) pageType = "Contact Page";
+  else if (url.includes("checkout")) pageType = "Checkout Page";
+  else if (url.includes("cart")) pageType = "Cart Page";
+  else if (url.includes("thank")) pageType = "Thank You Page";
+  else if (url.includes("blog") || url.includes("article")) pageType = "Content Page";
+  else if (url.includes("product")) pageType = "Product Page";
+  else if (new URL(page.url).pathname === "/") pageType = "Homepage";
 
   return {
     ...page,
     pageType,
+    diagnosis,
     riskLevel,
     issue,
-    recommendation
+    recommendation,
+    priority
   };
 }
 
 function buildSummary(pages, edges) {
-  const highRisk = pages.filter(page => page.riskLevel === "High").length;
-  const mediumRisk = pages.filter(page => page.riskLevel === "Medium").length;
-  const deadEnds = pages.filter(page => page.links.length === 0).length;
-  const conversionPages = pages.filter(page => page.pageType === "Conversion").length;
-
   return {
-    highRisk,
-    mediumRisk,
-    deadEnds,
-    conversionPages,
-    connections: edges.length,
-    healthScore: Math.max(0, 100 - highRisk * 20 - mediumRisk * 8 - deadEnds * 5)
+    totalPages: pages.length,
+    totalEdges: edges.length,
+    healthy: pages.filter(page => page.diagnosis === "Healthy").length,
+    opportunities: pages.filter(page => page.diagnosis === "Opportunity").length,
+    broken: pages.filter(page => page.diagnosis === "Broken").length,
+    failed: pages.filter(page => page.diagnosis === "Failed").length,
+    deadEnds: pages.filter(page => page.diagnosis === "Dead End").length,
+    densePages: pages.filter(page => page.diagnosis === "Dense Page").length
   };
-}
-
-function detectPageType(rawUrl) {
-  const value = rawUrl.toLowerCase();
-
-  if (
-    value.includes("contact") ||
-    value.includes("thank") ||
-    value.includes("demo") ||
-    value.includes("book") ||
-    value.includes("lead") ||
-    value.includes("quote")
-  ) {
-    return "Conversion";
-  }
-
-  if (
-    value.includes("checkout") ||
-    value.includes("cart") ||
-    value.includes("product") ||
-    value.includes("shop") ||
-    value.includes("pricing")
-  ) {
-    return "Commerce";
-  }
-
-  if (
-    value.includes("blog") ||
-    value.includes("article") ||
-    value.includes("news") ||
-    value.includes("guide") ||
-    value.includes("resources")
-  ) {
-    return "Content";
-  }
-
-  return "General";
 }
 
 function normalizeUrl(rawUrl) {
