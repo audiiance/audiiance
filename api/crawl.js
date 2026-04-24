@@ -2,26 +2,13 @@ export default async function handler(request, response) {
   try {
     const { url } = request.query;
 
-    if (!url) {
-      return response.status(400).json({
-        error: "Missing URL. Add ?url=https://example.com"
-      });
-    }
+    if (!url) return response.status(400).json({ error: "Missing URL." });
 
     let startUrl;
-
     try {
       startUrl = new URL(url);
     } catch {
-      return response.status(400).json({
-        error: "Invalid URL. Use full URL like https://example.com"
-      });
-    }
-
-    if (!["http:", "https:"].includes(startUrl.protocol)) {
-      return response.status(400).json({
-        error: "Only http and https URLs are allowed."
-      });
+      return response.status(400).json({ error: "Invalid URL. Use https://example.com" });
     }
 
     const maxPages = 10;
@@ -31,25 +18,41 @@ export default async function handler(request, response) {
 
     while (queue.length > 0 && pages.length < maxPages) {
       const currentUrl = queue.shift();
-
       if (visited.has(currentUrl)) continue;
+
       visited.add(currentUrl);
 
-      const pageData = await crawlPage(currentUrl, startUrl.hostname);
-      pages.push(pageData);
+      const page = await crawlPage(currentUrl, startUrl.hostname);
+      pages.push(page);
 
-      pageData.links.forEach(link => {
+      page.links.forEach(link => {
         if (!visited.has(link) && queue.length + pages.length < maxPages) {
           queue.push(link);
         }
       });
     }
 
+    const pageUrls = new Set(pages.map(page => page.url));
+
+    const edges = [];
+
+    pages.forEach(page => {
+      page.links.forEach(link => {
+        if (pageUrls.has(link)) {
+          edges.push({
+            from: page.url,
+            to: link
+          });
+        }
+      });
+    });
+
     return response.status(200).json({
       crawledUrl: startUrl.href,
       pagesCrawled: pages.length,
+      linksFound: [...new Set(pages.flatMap(page => page.links))].length,
       pages,
-      linksFound: [...new Set(pages.flatMap(page => page.links))].length
+      edges
     });
 
   } catch (error) {
@@ -68,7 +71,7 @@ async function crawlPage(pageUrl, rootHostname) {
     const siteResponse = await fetch(pageUrl, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "AudiianceBot/0.2"
+        "User-Agent": "AudiianceBot/0.3"
       }
     });
 
@@ -81,10 +84,11 @@ async function crawlPage(pageUrl, rootHostname) {
       ? titleMatch[1].replace(/\s+/g, " ").trim()
       : "Untitled page";
 
-    const linkMatches = [...html.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
-    const internalLinks = [];
+    const matches = [...html.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
 
-    linkMatches.forEach(match => {
+    const links = [];
+
+    matches.forEach(match => {
       const href = match[2];
 
       if (
@@ -93,39 +97,35 @@ async function crawlPage(pageUrl, rootHostname) {
         href.startsWith("mailto:") ||
         href.startsWith("tel:") ||
         href.startsWith("javascript:")
-      ) {
-        return;
-      }
+      ) return;
 
       try {
         const absoluteUrl = new URL(href, pageUrl);
 
         if (absoluteUrl.hostname === rootHostname) {
           absoluteUrl.hash = "";
-          internalLinks.push(absoluteUrl.href);
+          links.push(absoluteUrl.href);
         }
-      } catch {
-        // Ignore invalid hrefs
-      }
+      } catch {}
     });
 
     return {
       url: pageUrl,
-      statusCode: siteResponse.status,
       title,
-      links: [...new Set(internalLinks)].slice(0, 20),
+      statusCode: siteResponse.status,
+      status: siteResponse.status >= 400 ? "Broken" : "Detected",
       suggestedEvent: suggestEvent(pageUrl),
-      status: siteResponse.status >= 400 ? "Broken" : "Detected"
+      links: [...new Set(links)].slice(0, 25)
     };
 
-  } catch (error) {
+  } catch {
     return {
       url: pageUrl,
-      statusCode: 0,
       title: "Failed to crawl",
-      links: [],
+      statusCode: 0,
+      status: "Failed",
       suggestedEvent: suggestEvent(pageUrl),
-      status: "Failed"
+      links: []
     };
   }
 }
