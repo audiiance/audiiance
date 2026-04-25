@@ -207,21 +207,22 @@
 
     .canvas {
       position: relative;
-      min-width: 1600px;
+      min-width: 1500px;
       min-height: 760px;
       background:
-        radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.16) 1px, transparent 0);
+        radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.12) 1px, transparent 0);
       background-size: 28px 28px;
     }
 
     .flow-heading {
       position: absolute;
-      color: #e5e7eb;
+      color: #e2e8f0;
       font-size: 13px;
       font-weight: bold;
       letter-spacing: 0.02em;
-      opacity: 0.9;
       pointer-events: none;
+      opacity: 0.95;
+      z-index: 3;
     }
 
     svg {
@@ -231,27 +232,28 @@
       height: 100%;
       pointer-events: none;
       overflow: visible;
+      z-index: 1;
     }
 
     .edge {
       fill: none;
       stroke: rgba(148, 163, 184, 0.28);
-      stroke-width: 8;
+      stroke-width: 6;
       stroke-linecap: round;
       stroke-linejoin: round;
-      opacity: 0.9;
+      opacity: 0.95;
     }
 
     .edge.active {
-      stroke: rgba(34, 211, 238, 0.78);
-      stroke-width: 9;
+      stroke: rgba(34, 211, 238, 0.88);
+      stroke-width: 7;
       opacity: 1;
     }
 
     .node {
       position: absolute;
       width: 260px;
-      min-height: 112px;
+      min-height: 116px;
       padding: 18px;
       border-radius: 16px;
       background: #1e293b;
@@ -279,7 +281,7 @@
     .node.dense { border-color: #38bdf8; }
 
     .node.hidden {
-      opacity: 0.14;
+      opacity: 0.12;
     }
 
     .node h3 {
@@ -292,6 +294,7 @@
       font-size: 13px;
       word-break: break-word;
       line-height: 1.4;
+      margin: 0;
     }
 
     .node-meta {
@@ -760,11 +763,15 @@
 
       const pages = crawlData.pages || [];
       const edges = crawlData.edges || [];
-      const positions = calculateFlowPositions(pages, edges);
 
-      renderFlowHeadings(canvas, positions);
+      const flowData = buildFlowLayoutData(pages, edges);
+      const positions = flowData.positions;
+      const flowEdges = flowData.flowEdges;
+      const headings = flowData.headings;
 
-      edges.forEach(edge => {
+      renderFlowHeadings(canvas, headings);
+
+      flowEdges.forEach(edge => {
         const from = positions[edge.from];
         const to = positions[edge.to];
 
@@ -782,17 +789,17 @@
         const endX = to.x;
         const endY = to.y + to.height / 2;
 
-        const distance = Math.max(120, endX - startX);
-        const curve = Math.min(180, distance * 0.55);
+        const horizontalSpace = Math.max(100, endX - startX);
+        const handle = Math.min(120, horizontalSpace * 0.42);
 
         const d = `
           M ${startX} ${startY}
-          C ${startX + curve} ${startY},
-            ${endX - curve} ${endY},
+          C ${startX + handle} ${startY},
+            ${endX - handle} ${endY},
             ${endX} ${endY}
         `;
 
-        path.setAttribute("d", d);
+        path.setAttribute("d", d.trim());
         path.setAttribute("class", "edge");
         path.setAttribute("data-from", edge.from);
         path.setAttribute("data-to", edge.to);
@@ -818,7 +825,7 @@
         node.setAttribute("data-url", page.url);
 
         node.innerHTML = `
-          <h3>${index === 0 ? "Starting Page" : getPathName(page.url)}</h3>
+          <h3>${position.depth === 0 ? "Starting Page" : getPathName(page.url)}</h3>
           <p>${page.url}</p>
           <div class="node-meta">
             <span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span>
@@ -834,76 +841,166 @@
       });
     }
 
-    function calculateFlowPositions(pages, edges) {
+    function buildFlowLayoutData(pages, allEdges) {
       const positions = {};
-      const depthMap = {};
-      const startUrl = pages[0] ? pages[0].url : null;
+      const flowEdges = [];
+      const headings = [];
 
-      if (!startUrl) return positions;
-
-      depthMap[startUrl] = 0;
-
-      const queue = [startUrl];
-
-      while (queue.length) {
-        const current = queue.shift();
-        const currentDepth = depthMap[current];
-
-        edges
-          .filter(edge => edge.from === current)
-          .forEach(edge => {
-            if (depthMap[edge.to] === undefined) {
-              depthMap[edge.to] = currentDepth + 1;
-              queue.push(edge.to);
-            }
-          });
+      if (!pages.length) {
+        return { positions, flowEdges, headings };
       }
 
+      const rootUrl = pages[0].url;
+      const nodeWidth = 260;
+      const nodeHeight = 116;
+      const columnGap = 340;
+      const rowGap = 28;
+      const startX = 40;
+      const topStart = 110;
+
+      const pageMap = new Map(pages.map(page => [page.url, page]));
+      const outgoingMap = {};
+      const incomingMap = {};
+
       pages.forEach(page => {
-        if (depthMap[page.url] === undefined) {
-          depthMap[page.url] = 1;
+        outgoingMap[page.url] = [];
+        incomingMap[page.url] = [];
+      });
+
+      allEdges.forEach(edge => {
+        if (!pageMap.has(edge.from) || !pageMap.has(edge.to)) return;
+        if (!outgoingMap[edge.from].includes(edge.to)) {
+          outgoingMap[edge.from].push(edge.to);
+          incomingMap[edge.to].push(edge.from);
         }
       });
 
-      const maxDepth = Math.max(...Object.values(depthMap), 0);
-      const limitedMaxDepth = Math.min(maxDepth, 4);
+      Object.keys(outgoingMap).forEach(url => {
+        outgoingMap[url].sort((a, b) => {
+          const pageA = pageMap.get(a);
+          const pageB = pageMap.get(b);
 
-      const columns = {};
+          if ((pageB?.priorityScore || 0) !== (pageA?.priorityScore || 0)) {
+            return (pageB?.priorityScore || 0) - (pageA?.priorityScore || 0);
+          }
 
-      pages.forEach(page => {
-        const depth = Math.min(depthMap[page.url], limitedMaxDepth);
-
-        if (!columns[depth]) columns[depth] = [];
-        columns[depth].push(page);
+          return getPathName(a).localeCompare(getPathName(b));
+        });
       });
 
-      const columnGap = 360;
-      const startX = 40;
-      const topY = 110;
-      const nodeWidth = 260;
-      const nodeHeight = 112;
-      const rowGap = 28;
+      const depthMap = {};
+      const parentMap = {};
+      const visited = new Set();
+      const queue = [rootUrl];
 
-      Object.keys(columns).forEach(depthKey => {
-        const depth = Number(depthKey);
-        const columnPages = columns[depth];
+      depthMap[rootUrl] = 0;
+      visited.add(rootUrl);
+
+      while (queue.length) {
+        const current = queue.shift();
+        const nextDepth = depthMap[current] + 1;
+
+        outgoingMap[current].forEach(childUrl => {
+          if (!visited.has(childUrl)) {
+            visited.add(childUrl);
+            depthMap[childUrl] = nextDepth;
+            parentMap[childUrl] = current;
+            queue.push(childUrl);
+          }
+        });
+      }
+
+      const disconnected = pages
+        .map(page => page.url)
+        .filter(url => !visited.has(url));
+
+      disconnected.forEach(url => {
+        depthMap[url] = 1;
+        parentMap[url] = rootUrl;
+      });
+
+      const childrenMap = {};
+      pages.forEach(page => {
+        childrenMap[page.url] = [];
+      });
+
+      Object.keys(parentMap).forEach(childUrl => {
+        const parentUrl = parentMap[childUrl];
+        if (!childrenMap[parentUrl]) childrenMap[parentUrl] = [];
+        childrenMap[parentUrl].push(childUrl);
+      });
+
+      Object.keys(childrenMap).forEach(url => {
+        childrenMap[url].sort((a, b) => {
+          const pageA = pageMap.get(a);
+          const pageB = pageMap.get(b);
+
+          if ((pageB?.priorityScore || 0) !== (pageA?.priorityScore || 0)) {
+            return (pageB?.priorityScore || 0) - (pageA?.priorityScore || 0);
+          }
+
+          return getPathName(a).localeCompare(getPathName(b));
+        });
+      });
+
+      let nextLeafY = topStart;
+
+      function assignNode(url, depth) {
         const x = startX + depth * columnGap;
+        const children = childrenMap[url] || [];
 
-        const totalHeight = columnPages.length * nodeHeight + (columnPages.length - 1) * rowGap;
-        const yStart = Math.max(topY, 380 - totalHeight / 2);
-
-        columnPages.forEach((page, index) => {
-          positions[page.url] = {
+        if (!children.length) {
+          positions[url] = {
             x,
-            y: yStart + index * (nodeHeight + rowGap),
+            y: nextLeafY,
             width: nodeWidth,
             height: nodeHeight,
             depth
           };
+
+          nextLeafY += nodeHeight + rowGap;
+          return positions[url].y + nodeHeight / 2;
+        }
+
+        const childCenters = [];
+
+        children.forEach(childUrl => {
+          const childCenter = assignNode(childUrl, depth + 1);
+          childCenters.push(childCenter);
+          flowEdges.push({ from: url, to: childUrl });
         });
+
+        const averageCenter =
+          childCenters.reduce((sum, value) => sum + value, 0) / childCenters.length;
+
+        positions[url] = {
+          x,
+          y: averageCenter - nodeHeight / 2,
+          width: nodeWidth,
+          height: nodeHeight,
+          depth
+        };
+
+        return averageCenter;
+      }
+
+      assignNode(rootUrl, 0);
+
+      pages.forEach(page => {
+        if (!positions[page.url]) {
+          positions[page.url] = {
+            x: startX + columnGap,
+            y: nextLeafY,
+            width: nodeWidth,
+            height: nodeHeight,
+            depth: 1
+          };
+          nextLeafY += nodeHeight + rowGap;
+        }
       });
 
-      const requiredWidth = startX + (limitedMaxDepth + 1) * columnGap + nodeWidth + 80;
+      const maxDepth = Math.max(...Object.values(positions).map(position => position.depth), 0);
+      const requiredWidth = startX + (maxDepth + 1) * columnGap + nodeWidth + 120;
       const requiredHeight = Math.max(
         760,
         ...Object.values(positions).map(position => position.y + position.height + 80)
@@ -913,36 +1010,34 @@
       canvas.style.minWidth = requiredWidth + "px";
       canvas.style.minHeight = requiredHeight + "px";
 
-      return positions;
+      for (let depth = 0; depth <= maxDepth; depth++) {
+        const firstNodeInColumn = Object.values(positions).find(position => position.depth === depth);
+        if (!firstNodeInColumn) continue;
+
+        let label = "Later Pages";
+        if (depth === 0) label = "Starting Page";
+        if (depth === 1) label = "2nd Interaction";
+        if (depth === 2) label = "3rd Interaction";
+        if (depth === 3) label = "4th Interaction";
+
+        headings.push({
+          depth,
+          label,
+          x: firstNodeInColumn.x,
+          y: 54
+        });
+      }
+
+      return { positions, flowEdges, headings };
     }
 
-    function renderFlowHeadings(canvas, positions) {
-      const depths = [...new Set(Object.values(positions).map(position => position.depth))].sort((a, b) => a - b);
-
-      depths.forEach(depth => {
-        const columnPositions = Object.values(positions).filter(position => position.depth === depth);
-        if (!columnPositions.length) return;
-
-        const first = columnPositions[0];
-
+    function renderFlowHeadings(canvas, headings) {
+      headings.forEach(item => {
         const heading = document.createElement("div");
         heading.className = "flow-heading";
-
-        if (depth === 0) {
-          heading.innerText = "Starting Page";
-        } else if (depth === 1) {
-          heading.innerText = "2nd Interaction";
-        } else if (depth === 2) {
-          heading.innerText = "3rd Interaction";
-        } else if (depth === 3) {
-          heading.innerText = "4th Interaction";
-        } else {
-          heading.innerText = "Later Pages";
-        }
-
-        heading.style.left = first.x + "px";
-        heading.style.top = "54px";
-
+        heading.innerText = item.label;
+        heading.style.left = item.x + "px";
+        heading.style.top = item.y + "px";
         canvas.appendChild(heading);
       });
     }
