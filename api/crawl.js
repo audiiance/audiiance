@@ -3,7 +3,9 @@ export default async function handler(request, response) {
     const { url } = request.query;
 
     if (!url) {
-      return response.status(400).json({ error: "Missing URL. Add ?url=https://example.com" });
+      return response.status(400).json({
+        error: "Missing URL. Add ?url=https://example.com"
+      });
     }
 
     let startUrl;
@@ -11,47 +13,45 @@ export default async function handler(request, response) {
     try {
       startUrl = new URL(url);
     } catch {
-      return response.status(400).json({ error: "Invalid URL. Use full URL like https://example.com" });
+      return response.status(400).json({
+        error: "Invalid URL. Use full URL like https://example.com"
+      });
     }
 
     if (!["http:", "https:"].includes(startUrl.protocol)) {
-      return response.status(400).json({ error: "Only http and https URLs are allowed." });
+      return response.status(400).json({
+        error: "Only http and https URLs are allowed."
+      });
     }
 
     const maxPages = 40;
 
     /*
-      Audiiance depth model:
+      Crawl depth rule:
       Layer 0 = Seed Page
       Layer 1 = 1st Interaction
       Layer 2 = 2nd Interaction
       Layer 3 = 3rd Interaction
 
-      This creates 4 visible layers total.
+      That gives us 4 visual layers total.
     */
     const maxDepth = 3;
 
     const visited = new Set();
-    const queued = new Set();
-
-    const seedUrl = normalizeUrl(startUrl.href);
-
     const queue = [
       {
-        url: seedUrl,
+        url: normalizeUrl(startUrl.href),
         depth: 0
       }
     ];
-
-    queued.add(seedUrl);
 
     const pages = [];
     const edges = [];
 
     while (queue.length > 0 && pages.length < maxPages) {
-      const currentItem = queue.shift();
-      const currentUrl = currentItem.url;
-      const currentDepth = currentItem.depth;
+      const current = queue.shift();
+      const currentUrl = current.url;
+      const currentDepth = current.depth;
 
       if (visited.has(currentUrl)) continue;
 
@@ -61,31 +61,25 @@ export default async function handler(request, response) {
 
       pages.push({
         ...pageData,
-        crawlDepth: currentDepth,
-        layerName: getLayerName(currentDepth)
+        crawlDepth: currentDepth
       });
 
       pageData.links.forEach(link => {
         edges.push({
           from: currentUrl,
-          to: link,
-          fromDepth: currentDepth,
-          toDepth: currentDepth + 1,
-          relationshipType: "internal_link"
+          to: link
         });
 
         if (
           currentDepth < maxDepth &&
           !visited.has(link) &&
-          !queued.has(link) &&
+          !queue.some(item => item.url === link) &&
           queue.length + pages.length < maxPages
         ) {
           queue.push({
             url: link,
             depth: currentDepth + 1
           });
-
-          queued.add(link);
         }
       });
     }
@@ -97,26 +91,15 @@ export default async function handler(request, response) {
     );
 
     const diagnosedPages = pages.map(page => diagnosePage(page));
-
     const priorityQueue = buildPriorityQueue(diagnosedPages, filteredEdges);
-
     const summary = buildSummary(diagnosedPages, filteredEdges, priorityQueue, maxDepth);
 
     return response.status(200).json({
-      crawledUrl: seedUrl,
-      crawlSettings: {
-        maxPages,
-        maxDepth,
-        visibleLayers: 4,
-        layers: [
-          "Seed Page",
-          "1st Interaction",
-          "2nd Interaction",
-          "3rd Interaction"
-        ]
-      },
+      crawledUrl: normalizeUrl(startUrl.href),
       pagesCrawled: diagnosedPages.length,
       linksFound: [...new Set(pages.flatMap(page => page.links))].length,
+      crawlDepth: maxDepth + 1,
+      maxDepth,
       edges: filteredEdges,
       summary,
       priorityQueue,
@@ -148,11 +131,13 @@ async function crawlPage(pageUrl, rootHostname) {
     const html = await siteResponse.text();
 
     const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
+
     const title = titleMatch
-      ? titleMatch[1].replace(/\s+/g, " ").trim()
+      ? decodeHtml(titleMatch[1]).replace(/\s+/g, " ").trim()
       : "Untitled page";
 
     const linkMatches = [...html.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
+
     const internalLinks = [];
 
     linkMatches.forEach(match => {
@@ -175,7 +160,7 @@ async function crawlPage(pageUrl, rootHostname) {
           internalLinks.push(normalizeUrl(absoluteUrl.href));
         }
       } catch {
-        // Ignore bad hrefs
+        // Ignore invalid href values
       }
     });
 
@@ -183,7 +168,7 @@ async function crawlPage(pageUrl, rootHostname) {
       url: normalizeUrl(pageUrl),
       statusCode: siteResponse.status,
       title,
-      links: [...new Set(internalLinks)].slice(0, 35),
+      links: [...new Set(internalLinks)].slice(0, 40),
       suggestedEvent: suggestEvent(pageUrl),
       status: siteResponse.status >= 400 ? "Broken" : "Detected"
     };
@@ -294,9 +279,6 @@ function calculatePriorityScore(page) {
 
   if (page.links.length === 0) score += 10;
   if (page.links.length > 20) score += 8;
-
-  if (page.crawlDepth === 0) score += 8;
-  if (page.crawlDepth === 1 && page.diagnosis !== "Healthy") score += 6;
 
   return Math.min(100, score);
 }
@@ -420,8 +402,6 @@ function buildPriorityQueue(pages, edges) {
         actionCard: page.actionCard,
         actionBoard: page.actionBoard,
         suggestedEvent: page.suggestedEvent,
-        crawlDepth: page.crawlDepth,
-        layerName: page.layerName,
         incomingLinks,
         outgoingLinks
       };
@@ -445,8 +425,7 @@ function buildSummary(pages, edges, priorityQueue, maxDepth) {
   return {
     totalPages: pages.length,
     totalEdges: edges.length,
-    maxDepth,
-    visibleLayers: 4,
+    crawlLayers: maxDepth + 1,
     seedPages: pages.filter(page => page.crawlDepth === 0).length,
     firstInteraction: pages.filter(page => page.crawlDepth === 1).length,
     secondInteraction: pages.filter(page => page.crawlDepth === 2).length,
@@ -477,6 +456,8 @@ function detectPageType(rawUrl) {
   if (url.includes("thank")) return "Thank You Page";
   if (url.includes("blog") || url.includes("article")) return "Content Page";
   if (url.includes("product")) return "Product Page";
+  if (url.includes("solution")) return "Solution Page";
+  if (url.includes("service")) return "Service Page";
 
   return "Standard Page";
 }
@@ -495,6 +476,7 @@ function isHighIntentUrl(url) {
 
 function normalizeUrl(rawUrl) {
   const url = new URL(rawUrl);
+
   url.hash = "";
 
   if (url.pathname !== "/" && url.pathname.endsWith("/")) {
@@ -512,7 +494,10 @@ function suggestEvent(rawUrl) {
   if (value.includes("checkout")) return "begin_checkout";
   if (value.includes("cart")) return "view_cart";
   if (value.includes("blog")) return "view_article";
+  if (value.includes("article")) return "view_article";
   if (value.includes("product")) return "view_item";
+  if (value.includes("solution")) return "view_solution";
+  if (value.includes("service")) return "view_service";
   if (value.includes("thank")) return "generate_lead";
   if (value.includes("demo")) return "generate_lead";
   if (value.includes("book")) return "generate_lead";
@@ -520,10 +505,11 @@ function suggestEvent(rawUrl) {
   return "page_view";
 }
 
-function getLayerName(depth) {
-  if (depth === 0) return "Seed Page";
-  if (depth === 1) return "1st Interaction";
-  if (depth === 2) return "2nd Interaction";
-  if (depth === 3) return "3rd Interaction";
-  return "Later Page";
+function decodeHtml(value) {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
 }
