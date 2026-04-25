@@ -18,26 +18,74 @@ export default async function handler(request, response) {
       return response.status(400).json({ error: "Only http and https URLs are allowed." });
     }
 
-    const maxPages = 12;
+    const maxPages = 40;
+
+    /*
+      Audiiance depth model:
+      Layer 0 = Seed Page
+      Layer 1 = 1st Interaction
+      Layer 2 = 2nd Interaction
+      Layer 3 = 3rd Interaction
+
+      This creates 4 visible layers total.
+    */
+    const maxDepth = 3;
+
     const visited = new Set();
-    const queue = [normalizeUrl(startUrl.href)];
+    const queued = new Set();
+
+    const seedUrl = normalizeUrl(startUrl.href);
+
+    const queue = [
+      {
+        url: seedUrl,
+        depth: 0
+      }
+    ];
+
+    queued.add(seedUrl);
+
     const pages = [];
     const edges = [];
 
     while (queue.length > 0 && pages.length < maxPages) {
-      const currentUrl = queue.shift();
+      const currentItem = queue.shift();
+      const currentUrl = currentItem.url;
+      const currentDepth = currentItem.depth;
 
       if (visited.has(currentUrl)) continue;
+
       visited.add(currentUrl);
 
       const pageData = await crawlPage(currentUrl, startUrl.hostname);
-      pages.push(pageData);
+
+      pages.push({
+        ...pageData,
+        crawlDepth: currentDepth,
+        layerName: getLayerName(currentDepth)
+      });
 
       pageData.links.forEach(link => {
-        edges.push({ from: currentUrl, to: link });
+        edges.push({
+          from: currentUrl,
+          to: link,
+          fromDepth: currentDepth,
+          toDepth: currentDepth + 1,
+          relationshipType: "internal_link"
+        });
 
-        if (!visited.has(link) && queue.length + pages.length < maxPages) {
-          queue.push(link);
+        if (
+          currentDepth < maxDepth &&
+          !visited.has(link) &&
+          !queued.has(link) &&
+          queue.length + pages.length < maxPages
+        ) {
+          queue.push({
+            url: link,
+            depth: currentDepth + 1
+          });
+
+          queued.add(link);
         }
       });
     }
@@ -49,11 +97,24 @@ export default async function handler(request, response) {
     );
 
     const diagnosedPages = pages.map(page => diagnosePage(page));
+
     const priorityQueue = buildPriorityQueue(diagnosedPages, filteredEdges);
-    const summary = buildSummary(diagnosedPages, filteredEdges, priorityQueue);
+
+    const summary = buildSummary(diagnosedPages, filteredEdges, priorityQueue, maxDepth);
 
     return response.status(200).json({
-      crawledUrl: normalizeUrl(startUrl.href),
+      crawledUrl: seedUrl,
+      crawlSettings: {
+        maxPages,
+        maxDepth,
+        visibleLayers: 4,
+        layers: [
+          "Seed Page",
+          "1st Interaction",
+          "2nd Interaction",
+          "3rd Interaction"
+        ]
+      },
       pagesCrawled: diagnosedPages.length,
       linksFound: [...new Set(pages.flatMap(page => page.links))].length,
       edges: filteredEdges,
@@ -78,7 +139,7 @@ async function crawlPage(pageUrl, rootHostname) {
     const siteResponse = await fetch(pageUrl, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "AudiianceBot/0.6"
+        "User-Agent": "AudiianceBot/0.7"
       }
     });
 
@@ -122,7 +183,7 @@ async function crawlPage(pageUrl, rootHostname) {
       url: normalizeUrl(pageUrl),
       statusCode: siteResponse.status,
       title,
-      links: [...new Set(internalLinks)].slice(0, 25),
+      links: [...new Set(internalLinks)].slice(0, 35),
       suggestedEvent: suggestEvent(pageUrl),
       status: siteResponse.status >= 400 ? "Broken" : "Detected"
     };
@@ -233,6 +294,9 @@ function calculatePriorityScore(page) {
 
   if (page.links.length === 0) score += 10;
   if (page.links.length > 20) score += 8;
+
+  if (page.crawlDepth === 0) score += 8;
+  if (page.crawlDepth === 1 && page.diagnosis !== "Healthy") score += 6;
 
   return Math.min(100, score);
 }
@@ -356,6 +420,8 @@ function buildPriorityQueue(pages, edges) {
         actionCard: page.actionCard,
         actionBoard: page.actionBoard,
         suggestedEvent: page.suggestedEvent,
+        crawlDepth: page.crawlDepth,
+        layerName: page.layerName,
         incomingLinks,
         outgoingLinks
       };
@@ -375,10 +441,16 @@ function buildPriorityQueue(pages, edges) {
     });
 }
 
-function buildSummary(pages, edges, priorityQueue) {
+function buildSummary(pages, edges, priorityQueue, maxDepth) {
   return {
     totalPages: pages.length,
     totalEdges: edges.length,
+    maxDepth,
+    visibleLayers: 4,
+    seedPages: pages.filter(page => page.crawlDepth === 0).length,
+    firstInteraction: pages.filter(page => page.crawlDepth === 1).length,
+    secondInteraction: pages.filter(page => page.crawlDepth === 2).length,
+    thirdInteraction: pages.filter(page => page.crawlDepth === 3).length,
     healthy: pages.filter(page => page.diagnosis === "Healthy").length,
     opportunities: pages.filter(page => page.diagnosis === "Opportunity").length,
     broken: pages.filter(page => page.diagnosis === "Broken").length,
@@ -446,4 +518,12 @@ function suggestEvent(rawUrl) {
   if (value.includes("book")) return "generate_lead";
 
   return "page_view";
+}
+
+function getLayerName(depth) {
+  if (depth === 0) return "Seed Page";
+  if (depth === 1) return "1st Interaction";
+  if (depth === 2) return "2nd Interaction";
+  if (depth === 3) return "3rd Interaction";
+  return "Later Page";
 }
