@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Audiiance - Diagnostic Sitemap Graph</title>
+  <title>Audiiance - Insight Layer</title>
   <style>
     body {
       margin: 0;
@@ -63,7 +63,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -84,6 +84,55 @@
     .card strong {
       font-size: 28px;
       display: block;
+      color: white;
+    }
+
+    .priority-panel {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .priority-panel h2 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+    }
+
+    .queue {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .action-card {
+      background: #0b1220;
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      padding: 18px;
+      cursor: pointer;
+    }
+
+    .action-card:hover {
+      border-color: #22d3ee;
+    }
+
+    .action-card h3 {
+      margin: 10px 0;
+      font-size: 17px;
+    }
+
+    .action-card p {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .score {
+      font-size: 30px;
+      font-weight: bold;
       color: white;
     }
 
@@ -207,9 +256,14 @@
     .badge.deadend { background: rgba(168,85,247,.15); color: #d8b4fe; }
     .badge.dense { background: rgba(56,189,248,.15); color: #bae6fd; }
 
+    .badge.low { background: rgba(148,163,184,.15); color: #cbd5e1; }
+    .badge.medium { background: rgba(245,158,11,.15); color: #fcd34d; }
+    .badge.high { background: rgba(249,115,22,.15); color: #fdba74; }
+    .badge.critical { background: rgba(239,68,68,.15); color: #fca5a5; }
+
     .panel-grid {
       display: grid;
-      grid-template-columns: 1fr 390px;
+      grid-template-columns: 1fr 420px;
       gap: 24px;
     }
 
@@ -298,7 +352,8 @@
 
     @media (max-width: 1100px) {
       .grid,
-      .panel-grid {
+      .panel-grid,
+      .queue {
         grid-template-columns: 1fr;
       }
     }
@@ -308,15 +363,15 @@
 <body>
   <div class="loading" id="loadingScreen">
     <div>
-      <h1>Diagnostic Crawl Started</h1>
-      <p id="loadingText">Mapping pages, connections, and issues...</p>
+      <h1>Insight Crawl Started</h1>
+      <p id="loadingText">Mapping pages, issues, and priority actions...</p>
     </div>
   </div>
 
   <div class="screen" id="resultsScreen" style="display:none;">
     <div class="topbar">
       <div>
-        <h1>Diagnostic Sitemap Graph</h1>
+        <h1>Audiiance Insight Layer</h1>
         <p id="siteUrl">Website: loading...</p>
       </div>
 
@@ -329,10 +384,17 @@
     <div class="grid">
       <div class="card"><h3>Pages</h3><strong id="totalPages">--</strong></div>
       <div class="card"><h3>Connections</h3><strong id="totalEdges">--</strong></div>
-      <div class="card"><h3>Healthy</h3><strong id="healthyCount">--</strong></div>
+      <div class="card"><h3>Action Fixes</h3><strong id="actionableFixes">--</strong></div>
+      <div class="card"><h3>Critical</h3><strong id="criticalCount">--</strong></div>
+      <div class="card"><h3>High</h3><strong id="highCount">--</strong></div>
       <div class="card"><h3>Opportunities</h3><strong id="opportunityCount">--</strong></div>
       <div class="card"><h3>Broken/Failed</h3><strong id="brokenCount">--</strong></div>
-      <div class="card"><h3>Dead Ends</h3><strong id="deadEndCount">--</strong></div>
+    </div>
+
+    <div class="priority-panel">
+      <h2>Priority Queue</h2>
+      <p>Top actionable fixes ranked by business impact, page type, crawl status, and site-journey risk.</p>
+      <div class="queue" id="priorityQueue"></div>
     </div>
 
     <div class="filters" id="filters"></div>
@@ -351,7 +413,8 @@
               <th>Page</th>
               <th>Type</th>
               <th>Diagnosis</th>
-              <th>Priority</th>
+              <th>Score</th>
+              <th>Level</th>
               <th>Suggested Event</th>
             </tr>
           </thead>
@@ -360,7 +423,7 @@
       </div>
 
       <div class="details">
-        <h2>Diagnosis Details</h2>
+        <h2>Action Details</h2>
 
         <div class="detail-block">
           <div class="label">Page</div>
@@ -373,23 +436,23 @@
         </div>
 
         <div class="detail-block">
-          <div class="label">Page Type</div>
-          <div class="value" id="detailType">No page type yet</div>
+          <div class="label">Priority</div>
+          <div class="value" id="detailPriority">No priority yet</div>
         </div>
 
         <div class="detail-block">
-          <div class="label">Diagnosis</div>
-          <div class="value" id="detailDiagnosis">No diagnosis yet</div>
-        </div>
-
-        <div class="detail-block">
-          <div class="label">Issue</div>
+          <div class="label">What is wrong</div>
           <div class="value" id="detailIssue">No issue yet</div>
         </div>
 
         <div class="detail-block">
-          <div class="label">Recommendation</div>
-          <div class="value" id="detailRecommendation">No recommendation yet</div>
+          <div class="label">Why it matters</div>
+          <div class="value" id="detailWhy">No reason yet</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">How to fix it</div>
+          <div class="value" id="detailFix">No fix yet</div>
         </div>
 
         <div class="detail-block">
@@ -416,7 +479,7 @@
     if (!submittedUrl) {
       showError("No URL was provided. Go back and enter a website URL.");
     } else {
-      document.getElementById("loadingText").innerText = "Crawling and diagnosing: " + submittedUrl;
+      document.getElementById("loadingText").innerText = "Crawling and prioritising: " + submittedUrl;
       runCrawl(submittedUrl);
     }
 
@@ -457,23 +520,71 @@
       document.getElementById("siteUrl").innerText = "Website: " + data.crawledUrl;
 
       const summary = data.summary || {};
+
       document.getElementById("totalPages").innerText = summary.totalPages || data.pages.length;
       document.getElementById("totalEdges").innerText = summary.totalEdges || data.edges.length;
-      document.getElementById("healthyCount").innerText = summary.healthy || 0;
+      document.getElementById("actionableFixes").innerText = summary.actionableFixes || 0;
+      document.getElementById("criticalCount").innerText = summary.critical || 0;
+      document.getElementById("highCount").innerText = summary.high || 0;
       document.getElementById("opportunityCount").innerText = summary.opportunities || 0;
       document.getElementById("brokenCount").innerText = (summary.broken || 0) + (summary.failed || 0);
-      document.getElementById("deadEndCount").innerText = summary.deadEnds || 0;
 
+      renderPriorityQueue();
       renderFilters();
       renderGraph();
       renderTable();
 
-      if (data.pages[0]) selectPage(data.pages[0].url);
+      const firstPriority = data.priorityQueue && data.priorityQueue[0];
+      if (firstPriority) {
+        selectPage(firstPriority.url);
+      } else if (data.pages[0]) {
+        selectPage(data.pages[0].url);
+      }
+    }
+
+    function renderPriorityQueue() {
+      const queue = document.getElementById("priorityQueue");
+      queue.innerHTML = "";
+
+      const fixes = (crawlData.priorityQueue || []).slice(0, 6);
+
+      if (!fixes.length) {
+        queue.innerHTML = `
+          <div class="action-card">
+            <span class="badge healthy">No urgent fixes</span>
+            <h3>Site looks stable from this crawl</h3>
+            <p>No medium, high, or critical priority actions were detected.</p>
+          </div>
+        `;
+        return;
+      }
+
+      fixes.forEach((fix, index) => {
+        const card = document.createElement("div");
+        card.className = "action-card";
+        card.onclick = function () {
+          selectPage(fix.url);
+          window.scrollTo({ top: document.querySelector(".canvas-wrap").offsetTop - 20, behavior: "smooth" });
+        };
+
+        card.innerHTML = `
+          <span class="badge ${getPriorityClass(fix.priorityLevel)}">#${index + 1} ${fix.priorityLevel}</span>
+          <div class="score">${fix.priorityScore}/100</div>
+          <h3>${fix.actionCard.title}</h3>
+          <p><strong>Page:</strong> ${getPathName(fix.url)}</p>
+          <p><strong>Fix:</strong> ${fix.actionCard.howToFix}</p>
+        `;
+
+        queue.appendChild(card);
+      });
     }
 
     function renderFilters() {
       const filters = [
         { key: "all", label: "All" },
+        { key: "Critical", label: "Critical" },
+        { key: "High", label: "High" },
+        { key: "Medium", label: "Medium" },
         { key: "Healthy", label: "Healthy" },
         { key: "Opportunity", label: "Opportunities" },
         { key: "Broken", label: "Broken" },
@@ -501,6 +612,9 @@
 
     function visibleByFilter(page) {
       if (currentFilter === "all") return true;
+      if (["Critical", "High", "Medium", "Low"].includes(currentFilter)) {
+        return page.priorityLevel === currentFilter;
+      }
       return page.diagnosis === currentFilter;
     }
 
@@ -553,6 +667,7 @@
           <h3>${index === 0 ? "Homepage" : getPathName(page.url)}</h3>
           <p>${page.url}</p>
           <span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span>
+          <span class="badge ${getPriorityClass(page.priorityLevel)}">${page.priorityScore}/100 · ${page.priorityLevel}</span>
         `;
 
         node.onclick = function () {
@@ -577,7 +692,7 @@
 
         positions[page.url] = {
           x: 390 + col * 285,
-          y: 80 + row * 170
+          y: 80 + row * 180
         };
       });
 
@@ -590,6 +705,7 @@
 
       crawlData.pages
         .filter(visibleByFilter)
+        .sort((a, b) => b.priorityScore - a.priorityScore)
         .forEach(page => {
           const tr = document.createElement("tr");
           tr.setAttribute("data-url", page.url);
@@ -602,7 +718,8 @@
             <td>${getPathName(page.url)}</td>
             <td>${page.pageType}</td>
             <td><span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span></td>
-            <td>${page.priority}</td>
+            <td>${page.priorityScore}/100</td>
+            <td><span class="badge ${getPriorityClass(page.priorityLevel)}">${page.priorityLevel}</span></td>
             <td>${page.suggestedEvent}</td>
           `;
 
@@ -633,12 +750,16 @@
         .filter(edge => edge.from === url)
         .map(edge => getPathName(edge.to));
 
+      const actionCard = page.actionCard || {};
+
       document.getElementById("detailName").innerText = getPathName(page.url);
       document.getElementById("detailUrl").innerText = page.url;
-      document.getElementById("detailType").innerText = page.pageType;
-      document.getElementById("detailDiagnosis").innerHTML = `<span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span>`;
-      document.getElementById("detailIssue").innerText = page.issue;
-      document.getElementById("detailRecommendation").innerText = page.recommendation;
+      document.getElementById("detailPriority").innerHTML = `
+        <span class="badge ${getPriorityClass(page.priorityLevel)}">${page.priorityScore}/100 · ${page.priorityLevel}</span>
+      `;
+      document.getElementById("detailIssue").innerText = actionCard.whatIsWrong || page.issue;
+      document.getElementById("detailWhy").innerText = actionCard.whyItMatters || "No priority reason available.";
+      document.getElementById("detailFix").innerText = actionCard.howToFix || page.recommendation;
       document.getElementById("detailEvent").innerText = page.suggestedEvent;
       document.getElementById("detailConnections").innerText = outgoing.length
         ? outgoing.join(", ")
@@ -659,6 +780,13 @@
       if (diagnosis === "Dead End") return "deadend";
       if (diagnosis === "Dense Page") return "dense";
       return "healthy";
+    }
+
+    function getPriorityClass(level) {
+      if (level === "Critical") return "critical";
+      if (level === "High") return "high";
+      if (level === "Medium") return "medium";
+      return "low";
     }
 
     function getPathName(rawUrl) {
@@ -686,16 +814,33 @@
 
       let report = "";
 
-      report += "AUDIIANCE DIAGNOSTIC SITEMAP BLUEPRINT\n";
-      report += "======================================\n\n";
+      report += "AUDIIANCE INSIGHT LAYER BLUEPRINT\n";
+      report += "=================================\n\n";
       report += "Website: " + crawlData.crawledUrl + "\n";
       report += "Pages Crawled: " + crawlData.pagesCrawled + "\n";
       report += "Connections Mapped: " + crawlData.edges.length + "\n";
       report += "Generated: " + new Date().toLocaleString() + "\n\n";
 
-      report += "DIAGNOSTIC SUMMARY\n";
-      report += "------------------\n";
+      report += "INSIGHT SUMMARY\n";
+      report += "---------------\n";
       report += JSON.stringify(crawlData.summary, null, 2) + "\n\n";
+
+      report += "PRIORITY QUEUE\n";
+      report += "--------------\n";
+
+      if (!crawlData.priorityQueue.length) {
+        report += "No medium, high, or critical fixes detected.\n\n";
+      }
+
+      crawlData.priorityQueue.forEach((fix, index) => {
+        report += index + 1 + ". " + fix.url + "\n";
+        report += "Priority: " + fix.priorityScore + "/100 - " + fix.priorityLevel + "\n";
+        report += "Diagnosis: " + fix.diagnosis + "\n";
+        report += "What is wrong: " + fix.actionCard.whatIsWrong + "\n";
+        report += "Why it matters: " + fix.actionCard.whyItMatters + "\n";
+        report += "How to fix: " + fix.actionCard.howToFix + "\n";
+        report += "Suggested Event: " + fix.suggestedEvent + "\n\n";
+      });
 
       report += "PAGES\n";
       report += "-----\n";
@@ -705,7 +850,7 @@
         report += "Title: " + page.title + "\n";
         report += "Type: " + page.pageType + "\n";
         report += "Diagnosis: " + page.diagnosis + "\n";
-        report += "Priority: " + page.priority + "\n";
+        report += "Priority: " + page.priorityScore + "/100 - " + page.priorityLevel + "\n";
         report += "Issue: " + page.issue + "\n";
         report += "Recommendation: " + page.recommendation + "\n";
         report += "Suggested Event: " + page.suggestedEvent + "\n";
@@ -724,7 +869,7 @@
 
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = "audiiance-diagnostic-sitemap-report.txt";
+      a.download = "audiiance-insight-layer-report.txt";
       a.click();
 
       URL.revokeObjectURL(downloadUrl);
