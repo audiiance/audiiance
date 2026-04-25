@@ -207,8 +207,8 @@
 
     .canvas {
       position: relative;
-      min-width: 1500px;
-      min-height: 760px;
+      min-width: 1700px;
+      min-height: 780px;
       background:
         radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.12) 1px, transparent 0);
       background-size: 28px 28px;
@@ -225,6 +225,14 @@
       z-index: 3;
     }
 
+    .flow-subheading {
+      display: block;
+      margin-top: 6px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: normal;
+    }
+
     svg {
       position: absolute;
       inset: 0;
@@ -237,11 +245,11 @@
 
     .edge {
       fill: none;
-      stroke: rgba(148, 163, 184, 0.28);
-      stroke-width: 6;
+      stroke: rgba(148, 163, 184, 0.26);
+      stroke-width: 5;
       stroke-linecap: round;
       stroke-linejoin: round;
-      opacity: 0.95;
+      opacity: 0.92;
     }
 
     .edge.active {
@@ -439,7 +447,7 @@
   <div class="loading" id="loadingScreen">
     <div>
       <h1>Action Board Started</h1>
-      <p id="loadingText">Mapping pages, diagnostics, and priority actions...</p>
+      <p id="loadingText">Mapping 4 layers: Seed Page, 1st Interaction, 2nd Interaction, and 3rd Interaction...</p>
     </div>
   </div>
 
@@ -488,6 +496,7 @@
           <thead>
             <tr>
               <th>Page</th>
+              <th>Layer</th>
               <th>Type</th>
               <th>Diagnosis</th>
               <th>Score</th>
@@ -510,6 +519,11 @@
         <div class="detail-block">
           <div class="label">URL</div>
           <div class="value" id="detailUrl">No page selected</div>
+        </div>
+
+        <div class="detail-block">
+          <div class="label">Layer</div>
+          <div class="value" id="detailLayer">No layer yet</div>
         </div>
 
         <div class="detail-block">
@@ -538,8 +552,8 @@
         </div>
 
         <div class="detail-block">
-          <div class="label">Connected To</div>
-          <div class="value" id="detailConnections">No connections yet</div>
+          <div class="label">Relationship</div>
+          <div class="value" id="detailConnections">No relationships yet</div>
         </div>
       </div>
     </div>
@@ -557,7 +571,8 @@
     if (!submittedUrl) {
       showError("No URL was provided. Go back and enter a website URL.");
     } else {
-      document.getElementById("loadingText").innerText = "Crawling and prioritising: " + submittedUrl;
+      document.getElementById("loadingText").innerText =
+        "Crawling 4 layers from Seed Page: " + submittedUrl;
       runCrawl(submittedUrl);
     }
 
@@ -595,7 +610,8 @@
     }
 
     function renderResults(data) {
-      document.getElementById("siteUrl").innerText = "Website: " + data.crawledUrl;
+      document.getElementById("siteUrl").innerText =
+        "Website: " + data.crawledUrl + " · 4-layer crawl: Seed Page → 1st Interaction → 2nd Interaction → 3rd Interaction";
 
       const summary = data.summary || {};
 
@@ -693,6 +709,7 @@
         card.innerHTML = `
           <span class="badge ${getPriorityClass(fix.priorityLevel)}">#${index + 1} ${fix.priorityLevel}</span>
           <span class="badge medium">${fix.actionBoard.actionBucket}</span>
+          <span class="badge low">${fix.layerName || getLayerName(fix.crawlDepth || 0)}</span>
           <div class="score">${fix.priorityScore}/100</div>
           <h3>${fix.actionCard.title}</h3>
           <p><strong>Page:</strong> ${getPathName(fix.url)}</p>
@@ -721,7 +738,11 @@
         { key: "Broken", label: "Broken" },
         { key: "Failed", label: "Failed" },
         { key: "Dead End", label: "Dead Ends" },
-        { key: "Dense Page", label: "Dense Pages" }
+        { key: "Dense Page", label: "Dense Pages" },
+        { key: "Seed Page", label: "Seed Page" },
+        { key: "1st Interaction", label: "1st Interaction" },
+        { key: "2nd Interaction", label: "2nd Interaction" },
+        { key: "3rd Interaction", label: "3rd Interaction" }
       ];
 
       const wrap = document.getElementById("filters");
@@ -750,6 +771,10 @@
         return page.priorityLevel === currentFilter;
       }
 
+      if (["Seed Page", "1st Interaction", "2nd Interaction", "3rd Interaction"].includes(currentFilter)) {
+        return getLayerName(page.crawlDepth || 0) === currentFilter;
+      }
+
       return page.diagnosis === currentFilter;
     }
 
@@ -764,7 +789,7 @@
       const pages = crawlData.pages || [];
       const edges = crawlData.edges || [];
 
-      const flowData = buildFlowLayoutData(pages, edges);
+      const flowData = buildLayeredFlowLayoutData(pages, edges);
       const positions = flowData.positions;
       const flowEdges = flowData.flowEdges;
       const headings = flowData.headings;
@@ -789,8 +814,8 @@
         const endX = to.x;
         const endY = to.y + to.height / 2;
 
-        const horizontalSpace = Math.max(100, endX - startX);
-        const handle = Math.min(120, horizontalSpace * 0.42);
+        const horizontalSpace = Math.max(120, endX - startX);
+        const handle = Math.min(140, horizontalSpace * 0.45);
 
         const d = `
           M ${startX} ${startY}
@@ -804,17 +829,17 @@
         path.setAttribute("data-from", edge.from);
         path.setAttribute("data-to", edge.to);
 
-        if (faded) path.style.opacity = "0.12";
+        if (faded) path.style.opacity = "0.10";
 
         svg.appendChild(path);
       });
 
-      pages.forEach((page, index) => {
+      pages.forEach(page => {
         const position = positions[page.url];
         if (!position) return;
 
         const node = document.createElement("div");
-        node.className = getNodeClass(page, index === 0);
+        node.className = getNodeClass(page, position.depth === 0);
 
         if (!visibleByFilter(page)) node.classList.add("hidden");
 
@@ -824,12 +849,24 @@
         node.style.minHeight = position.height + "px";
         node.setAttribute("data-url", page.url);
 
+        const incomingCount = flowEdges.filter(edge => edge.to === page.url).length;
+        const outgoingCount = flowEdges.filter(edge => edge.from === page.url).length;
+
+        let relationshipLabel = "No child links";
+
+        if (position.depth === 0 && outgoingCount > 1) relationshipLabel = "1-to-many";
+        else if (outgoingCount > 1) relationshipLabel = "1-to-many";
+        else if (outgoingCount === 1) relationshipLabel = "1-to-1";
+        else if (incomingCount > 1) relationshipLabel = "many-to-1";
+
         node.innerHTML = `
-          <h3>${position.depth === 0 ? "Starting Page" : getPathName(page.url)}</h3>
+          <h3>${position.depth === 0 ? "Seed Page" : getPathName(page.url)}</h3>
           <p>${page.url}</p>
           <div class="node-meta">
+            <span class="badge low">${getLayerName(position.depth)}</span>
             <span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span>
             <span class="badge ${getPriorityClass(page.priorityLevel)}">${page.priorityScore}/100 · ${page.priorityLevel}</span>
+            <span class="badge medium">${relationshipLabel}</span>
           </div>
         `;
 
@@ -841,7 +878,7 @@
       });
     }
 
-    function buildFlowLayoutData(pages, allEdges) {
+    function buildLayeredFlowLayoutData(pages, allEdges) {
       const positions = {};
       const flowEdges = [];
       const headings = [];
@@ -851,191 +888,136 @@
       }
 
       const rootUrl = pages[0].url;
+
       const nodeWidth = 260;
       const nodeHeight = 116;
-      const columnGap = 340;
-      const rowGap = 28;
+      const columnGap = 370;
+      const rowGap = 32;
       const startX = 40;
-      const topStart = 110;
+      const topStart = 120;
 
       const pageMap = new Map(pages.map(page => [page.url, page]));
-      const outgoingMap = {};
-      const incomingMap = {};
+
+      const layers = {
+        0: [],
+        1: [],
+        2: [],
+        3: []
+      };
 
       pages.forEach(page => {
-        outgoingMap[page.url] = [];
-        incomingMap[page.url] = [];
+        const depth = Math.min(Number(page.crawlDepth || 0), 3);
+        layers[depth].push(page);
       });
 
+      Object.keys(layers).forEach(depthKey => {
+        layers[depthKey].sort((a, b) => {
+          if ((b.priorityScore || 0) !== (a.priorityScore || 0)) {
+            return (b.priorityScore || 0) - (a.priorityScore || 0);
+          }
+
+          return getPathName(a.url).localeCompare(getPathName(b.url));
+        });
+      });
+
+      if (!layers[0].some(page => page.url === rootUrl)) {
+        const rootPage = pageMap.get(rootUrl);
+        if (rootPage) {
+          layers[0].unshift(rootPage);
+        }
+      }
+
       allEdges.forEach(edge => {
-        if (!pageMap.has(edge.from) || !pageMap.has(edge.to)) return;
-        if (!outgoingMap[edge.from].includes(edge.to)) {
-          outgoingMap[edge.from].push(edge.to);
-          incomingMap[edge.to].push(edge.from);
+        const fromPage = pageMap.get(edge.from);
+        const toPage = pageMap.get(edge.to);
+
+        if (!fromPage || !toPage) return;
+
+        const fromDepth = Math.min(Number(fromPage.crawlDepth || 0), 3);
+        const toDepth = Math.min(Number(toPage.crawlDepth || 0), 3);
+
+        /*
+          Clean relationship rule:
+          Show only left-to-right layer relationships.
+
+          Seed Page → 1st Interaction
+          1st Interaction → 2nd Interaction
+          2nd Interaction → 3rd Interaction
+
+          This avoids spaghetti from backlinks and same-layer links.
+        */
+        if (toDepth === fromDepth + 1) {
+          flowEdges.push({
+            from: edge.from,
+            to: edge.to,
+            fromDepth,
+            toDepth
+          });
         }
       });
 
-      Object.keys(outgoingMap).forEach(url => {
-        outgoingMap[url].sort((a, b) => {
-          const pageA = pageMap.get(a);
-          const pageB = pageMap.get(b);
+      const maxRows = Math.max(
+        layers[0].length,
+        layers[1].length,
+        layers[2].length,
+        layers[3].length,
+        1
+      );
 
-          if ((pageB?.priorityScore || 0) !== (pageA?.priorityScore || 0)) {
-            return (pageB?.priorityScore || 0) - (pageA?.priorityScore || 0);
-          }
+      const fullHeight = maxRows * nodeHeight + (maxRows - 1) * rowGap;
+      const canvasTargetHeight = Math.max(780, topStart + fullHeight + 120);
 
-          return getPathName(a).localeCompare(getPathName(b));
-        });
-      });
-
-      const depthMap = {};
-      const parentMap = {};
-      const visited = new Set();
-      const queue = [rootUrl];
-
-      depthMap[rootUrl] = 0;
-      visited.add(rootUrl);
-
-      while (queue.length) {
-        const current = queue.shift();
-        const nextDepth = depthMap[current] + 1;
-
-        outgoingMap[current].forEach(childUrl => {
-          if (!visited.has(childUrl)) {
-            visited.add(childUrl);
-            depthMap[childUrl] = nextDepth;
-            parentMap[childUrl] = current;
-            queue.push(childUrl);
-          }
-        });
-      }
-
-      const disconnected = pages
-        .map(page => page.url)
-        .filter(url => !visited.has(url));
-
-      disconnected.forEach(url => {
-        depthMap[url] = 1;
-        parentMap[url] = rootUrl;
-      });
-
-      const childrenMap = {};
-      pages.forEach(page => {
-        childrenMap[page.url] = [];
-      });
-
-      Object.keys(parentMap).forEach(childUrl => {
-        const parentUrl = parentMap[childUrl];
-        if (!childrenMap[parentUrl]) childrenMap[parentUrl] = [];
-        childrenMap[parentUrl].push(childUrl);
-      });
-
-      Object.keys(childrenMap).forEach(url => {
-        childrenMap[url].sort((a, b) => {
-          const pageA = pageMap.get(a);
-          const pageB = pageMap.get(b);
-
-          if ((pageB?.priorityScore || 0) !== (pageA?.priorityScore || 0)) {
-            return (pageB?.priorityScore || 0) - (pageA?.priorityScore || 0);
-          }
-
-          return getPathName(a).localeCompare(getPathName(b));
-        });
-      });
-
-      let nextLeafY = topStart;
-
-      function assignNode(url, depth) {
+      Object.keys(layers).forEach(depthKey => {
+        const depth = Number(depthKey);
+        const columnPages = layers[depth];
         const x = startX + depth * columnGap;
-        const children = childrenMap[url] || [];
 
-        if (!children.length) {
-          positions[url] = {
+        const columnHeight = columnPages.length * nodeHeight + Math.max(0, columnPages.length - 1) * rowGap;
+        const yStart = Math.max(topStart, (canvasTargetHeight - columnHeight) / 2);
+
+        columnPages.forEach((page, index) => {
+          positions[page.url] = {
             x,
-            y: nextLeafY,
+            y: yStart + index * (nodeHeight + rowGap),
             width: nodeWidth,
             height: nodeHeight,
             depth
           };
-
-          nextLeafY += nodeHeight + rowGap;
-          return positions[url].y + nodeHeight / 2;
-        }
-
-        const childCenters = [];
-
-        children.forEach(childUrl => {
-          const childCenter = assignNode(childUrl, depth + 1);
-          childCenters.push(childCenter);
-          flowEdges.push({ from: url, to: childUrl });
         });
-
-        const averageCenter =
-          childCenters.reduce((sum, value) => sum + value, 0) / childCenters.length;
-
-        positions[url] = {
-          x,
-          y: averageCenter - nodeHeight / 2,
-          width: nodeWidth,
-          height: nodeHeight,
-          depth
-        };
-
-        return averageCenter;
-      }
-
-      assignNode(rootUrl, 0);
-
-      pages.forEach(page => {
-        if (!positions[page.url]) {
-          positions[page.url] = {
-            x: startX + columnGap,
-            y: nextLeafY,
-            width: nodeWidth,
-            height: nodeHeight,
-            depth: 1
-          };
-          nextLeafY += nodeHeight + rowGap;
-        }
       });
 
-      const maxDepth = Math.max(...Object.values(positions).map(position => position.depth), 0);
-      const requiredWidth = startX + (maxDepth + 1) * columnGap + nodeWidth + 120;
-      const requiredHeight = Math.max(
-        760,
-        ...Object.values(positions).map(position => position.y + position.height + 80)
-      );
-
       const canvas = document.getElementById("canvas");
-      canvas.style.minWidth = requiredWidth + "px";
-      canvas.style.minHeight = requiredHeight + "px";
+      canvas.style.minWidth = startX + 4 * columnGap + nodeWidth + 100 + "px";
+      canvas.style.minHeight = canvasTargetHeight + "px";
 
-      for (let depth = 0; depth <= maxDepth; depth++) {
-        const firstNodeInColumn = Object.values(positions).find(position => position.depth === depth);
-        if (!firstNodeInColumn) continue;
-
-        let label = "Later Pages";
-        if (depth === 0) label = "Starting Page";
-        if (depth === 1) label = "2nd Interaction";
-        if (depth === 2) label = "3rd Interaction";
-        if (depth === 3) label = "4th Interaction";
+      for (let depth = 0; depth <= 3; depth++) {
+        const x = startX + depth * columnGap;
+        const columnCount = layers[depth].length;
 
         headings.push({
           depth,
-          label,
-          x: firstNodeInColumn.x,
+          label: getLayerName(depth),
+          sublabel: columnCount + (columnCount === 1 ? " page" : " pages"),
+          x,
           y: 54
         });
       }
 
-      return { positions, flowEdges, headings };
+      return {
+        positions,
+        flowEdges,
+        headings
+      };
     }
 
     function renderFlowHeadings(canvas, headings) {
       headings.forEach(item => {
         const heading = document.createElement("div");
         heading.className = "flow-heading";
-        heading.innerText = item.label;
+        heading.innerHTML = `
+          ${item.label}
+          <span class="flow-subheading">${item.sublabel}</span>
+        `;
         heading.style.left = item.x + "px";
         heading.style.top = item.y + "px";
         canvas.appendChild(heading);
@@ -1048,7 +1030,13 @@
 
       crawlData.pages
         .filter(visibleByFilter)
-        .sort((a, b) => b.priorityScore - a.priorityScore)
+        .sort((a, b) => {
+          if ((a.crawlDepth || 0) !== (b.crawlDepth || 0)) {
+            return (a.crawlDepth || 0) - (b.crawlDepth || 0);
+          }
+
+          return b.priorityScore - a.priorityScore;
+        })
         .forEach(page => {
           const tr = document.createElement("tr");
           tr.setAttribute("data-url", page.url);
@@ -1059,6 +1047,7 @@
 
           tr.innerHTML = `
             <td>${getPathName(page.url)}</td>
+            <td>${getLayerName(page.crawlDepth || 0)}</td>
             <td>${page.pageType}</td>
             <td><span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span></td>
             <td>${page.priorityScore}/100</td>
@@ -1090,6 +1079,10 @@
 
       if (!page) return;
 
+      const incoming = crawlData.edges
+        .filter(edge => edge.to === url)
+        .map(edge => getPathName(edge.from));
+
       const outgoing = crawlData.edges
         .filter(edge => edge.from === url)
         .map(edge => getPathName(edge.to));
@@ -1099,6 +1092,7 @@
 
       document.getElementById("detailName").innerText = getPathName(page.url);
       document.getElementById("detailUrl").innerText = page.url;
+      document.getElementById("detailLayer").innerText = getLayerName(page.crawlDepth || 0);
 
       document.getElementById("detailPriority").innerHTML = `
         <span class="badge ${getPriorityClass(page.priorityLevel)}">${page.priorityScore}/100 · ${page.priorityLevel}</span>
@@ -1114,13 +1108,13 @@
       document.getElementById("detailFix").innerText = actionCard.howToFix || page.recommendation;
       document.getElementById("detailEvent").innerText = page.suggestedEvent;
 
-      document.getElementById("detailConnections").innerText = outgoing.length
-        ? outgoing.join(", ")
-        : "No crawled outgoing connections.";
+      document.getElementById("detailConnections").innerText =
+        "Incoming from: " + (incoming.length ? incoming.join(", ") : "None") +
+        " | Outgoing to: " + (outgoing.length ? outgoing.join(", ") : "None");
     }
 
-    function getNodeClass(page, isHome) {
-      let base = isHome ? "node healthy" : "node";
+    function getNodeClass(page, isSeed) {
+      let base = isSeed ? "node healthy" : "node";
       base += " " + getDiagnosisClass(page.diagnosis);
       return base;
     }
@@ -1140,6 +1134,14 @@
       if (level === "High") return "high";
       if (level === "Medium") return "medium";
       return "low";
+    }
+
+    function getLayerName(depth) {
+      if (depth === 0) return "Seed Page";
+      if (depth === 1) return "1st Interaction";
+      if (depth === 2) return "2nd Interaction";
+      if (depth === 3) return "3rd Interaction";
+      return "Later Page";
     }
 
     function getPathName(rawUrl) {
@@ -1168,11 +1170,12 @@
 
       let report = "";
 
-      report += "AUDIIANCE ACTION BOARD BLUEPRINT\n";
-      report += "===============================\n\n";
+      report += "AUDIIANCE 4-LAYER ACTION BOARD BLUEPRINT\n";
+      report += "=======================================\n\n";
       report += "Website: " + crawlData.crawledUrl + "\n";
       report += "Pages Crawled: " + crawlData.pagesCrawled + "\n";
       report += "Connections Mapped: " + crawlData.edges.length + "\n";
+      report += "Layers: Seed Page → 1st Interaction → 2nd Interaction → 3rd Interaction\n";
       report += "Generated: " + new Date().toLocaleString() + "\n\n";
 
       report += "SUMMARY\n";
@@ -1188,6 +1191,7 @@
 
       crawlData.priorityQueue.forEach((fix, index) => {
         report += index + 1 + ". " + fix.url + "\n";
+        report += "Layer: " + getLayerName(fix.crawlDepth || 0) + "\n";
         report += "Priority: " + fix.priorityScore + "/100 - " + fix.priorityLevel + "\n";
         report += "Bucket: " + fix.actionBoard.actionBucket + "\n";
         report += "Category: " + fix.actionBoard.category + "\n";
@@ -1206,6 +1210,7 @@
 
       crawlData.pages.forEach((page, index) => {
         report += index + 1 + ". " + page.url + "\n";
+        report += "Layer: " + getLayerName(page.crawlDepth || 0) + "\n";
         report += "Title: " + page.title + "\n";
         report += "Type: " + page.pageType + "\n";
         report += "Diagnosis: " + page.diagnosis + "\n";
@@ -1228,7 +1233,7 @@
 
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = "audiiance-action-board-report.txt";
+      a.download = "audiiance-4-layer-action-board-report.txt";
       a.click();
 
       URL.revokeObjectURL(downloadUrl);
