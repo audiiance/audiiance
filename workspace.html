@@ -90,21 +90,57 @@
     .priority-panel {
       background: #111827;
       border: 1px solid #1f2937;
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 24px;
+      border-radius: 22px;
+      padding: 32px;
+      margin-bottom: 28px;
     }
 
     .priority-panel h2 {
-      margin: 0 0 8px 0;
-      font-size: 24px;
+      margin: 0 0 12px 0;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .priority-panel > p {
+      max-width: 1050px;
+      margin: 0 0 28px 0;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #94a3b8;
+    }
+
+    #actionTabs {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    #actionTabs .filter {
+      background: #111827;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      border-radius: 999px;
+      padding: 13px 22px;
+      min-width: 104px;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    #actionTabs .filter.active {
+      background: #22d3ee;
+      color: #0f172a;
+      border-color: #22d3ee;
+      font-weight: bold;
     }
 
     .queue {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 18px;
+      gap: 18px;
+      margin-top: 0;
     }
 
     .action-card {
@@ -263,51 +299,50 @@
     .badge.high { background: rgba(249,115,22,.15); color: #fdba74; }
     .badge.critical { background: rgba(239,68,68,.15); color: #fca5a5; }
 
-.priority-panel {
-  background: #111827;
-  border: 1px solid #1f2937;
-  border-radius: 20px;
-  padding: 28px 32px;
-  margin-bottom: 24px;
-}
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 24px;
+    }
 
-.priority-panel h2 {
-  margin: 0 0 14px 0;
-  font-size: 28px;
-  line-height: 1.2;
-}
+    .table-wrap,
+    .details {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 20px;
+      overflow: hidden;
+    }
 
-.priority-panel p {
-  max-width: 980px;
-  margin-bottom: 26px;
-  font-size: 16px;
-  line-height: 1.6;
-  color: #94a3b8;
-}
+    .details {
+      padding: 20px;
+      overflow: hidden;
+    }
 
-.priority-panel .filters {
-  margin-bottom: 26px;
-}
+    .details h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
 
-#actionTabs {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: center;
-}
+    .detail-block {
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
 
-#actionTabs .filter {
-  padding: 12px 20px;
-  min-width: 96px;
-  border-radius: 999px;
-}
+    .detail-block:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
 
-#actionTabs .filter.active {
-  background: #22d3ee;
-  color: #0f172a;
-  border-color: #22d3ee;
-  font-weight: bold;
-}    .value {
+    .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .value {
       color: white;
       font-size: 15px;
       line-height: 1.5;
@@ -359,6 +394,19 @@
       .queue {
         grid-template-columns: 1fr;
       }
+
+      .priority-panel {
+        padding: 24px;
+      }
+
+      #actionTabs {
+        gap: 10px;
+      }
+
+      #actionTabs .filter {
+        min-width: auto;
+        padding: 11px 16px;
+      }
     }
   </style>
 </head>
@@ -398,7 +446,7 @@
       <h2>Priority Queue</h2>
       <p>Top actionable fixes ranked by impact, effort, page type, crawl status, and site-journey risk.</p>
 
-      <div class="filters" id="actionTabs"></div>
+      <div id="actionTabs"></div>
       <div class="queue" id="priorityQueue"></div>
     </div>
 
