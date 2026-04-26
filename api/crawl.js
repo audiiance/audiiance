@@ -27,13 +27,14 @@ export default async function handler(request, response) {
     const maxPages = 40;
 
     /*
-      Crawl depth rule:
-      Layer 0 = Seed Page
-      Layer 1 = 1st Interaction
+      Crawl layer rule:
+      Layer 0 = Seed URL
+      Layer 1 = 1st Interaction = top menu / header navigation only
       Layer 2 = 2nd Interaction
       Layer 3 = 3rd Interaction
 
-      That gives us 4 visual layers total.
+      This keeps the visual map clean and prevents the Seed URL from connecting
+      to every link on the homepage body/footer.
     */
     const maxDepth = 3;
 
@@ -64,7 +65,12 @@ export default async function handler(request, response) {
         crawlDepth: currentDepth
       });
 
-      pageData.links.forEach(link => {
+      const linksToFollow =
+        currentDepth === 0 && pageData.menuLinks.length
+          ? pageData.menuLinks
+          : pageData.links;
+
+      linksToFollow.forEach(link => {
         edges.push({
           from: currentUrl,
           to: link
@@ -98,6 +104,7 @@ export default async function handler(request, response) {
       crawledUrl: normalizeUrl(startUrl.href),
       pagesCrawled: diagnosedPages.length,
       linksFound: [...new Set(pages.flatMap(page => page.links))].length,
+      menuLinksFound: pages[0] ? pages[0].menuLinks.length : 0,
       crawlDepth: maxDepth + 1,
       maxDepth,
       edges: filteredEdges,
@@ -122,7 +129,7 @@ async function crawlPage(pageUrl, rootHostname) {
     const siteResponse = await fetch(pageUrl, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "AudiianceBot/0.7"
+        "User-Agent": "AudiianceBot/0.8"
       }
     });
 
@@ -136,39 +143,15 @@ async function crawlPage(pageUrl, rootHostname) {
       ? decodeHtml(titleMatch[1]).replace(/\s+/g, " ").trim()
       : "Untitled page";
 
-    const linkMatches = [...html.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
-
-    const internalLinks = [];
-
-    linkMatches.forEach(match => {
-      const href = match[2];
-
-      if (
-        !href ||
-        href.startsWith("#") ||
-        href.startsWith("mailto:") ||
-        href.startsWith("tel:") ||
-        href.startsWith("javascript:")
-      ) {
-        return;
-      }
-
-      try {
-        const absoluteUrl = new URL(href, pageUrl);
-
-        if (absoluteUrl.hostname === rootHostname) {
-          internalLinks.push(normalizeUrl(absoluteUrl.href));
-        }
-      } catch {
-        // Ignore invalid href values
-      }
-    });
+    const allInternalLinks = extractInternalLinks(html, pageUrl, rootHostname);
+    const menuLinks = extractMenuLinks(html, pageUrl, rootHostname, allInternalLinks);
 
     return {
       url: normalizeUrl(pageUrl),
       statusCode: siteResponse.status,
       title,
-      links: [...new Set(internalLinks)].slice(0, 40),
+      links: allInternalLinks.slice(0, 40),
+      menuLinks: menuLinks.slice(0, 14),
       suggestedEvent: suggestEvent(pageUrl),
       status: siteResponse.status >= 400 ? "Broken" : "Detected"
     };
@@ -179,10 +162,118 @@ async function crawlPage(pageUrl, rootHostname) {
       statusCode: 0,
       title: "Failed to crawl",
       links: [],
+      menuLinks: [],
       suggestedEvent: suggestEvent(pageUrl),
       status: "Failed"
     };
   }
+}
+
+function extractInternalLinks(html, pageUrl, rootHostname) {
+  const linkMatches = [...html.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
+  const internalLinks = [];
+
+  linkMatches.forEach(match => {
+    const href = match[2];
+
+    if (shouldIgnoreHref(href)) return;
+
+    try {
+      const absoluteUrl = new URL(href, pageUrl);
+
+      if (absoluteUrl.hostname === rootHostname) {
+        internalLinks.push(normalizeUrl(absoluteUrl.href));
+      }
+    } catch {
+      // Ignore invalid href values
+    }
+  });
+
+  return [...new Set(internalLinks)];
+}
+
+function extractMenuLinks(html, pageUrl, rootHostname, fallbackLinks) {
+  const menuHtmlBlocks = [];
+
+  const navMatches = [...html.matchAll(/<nav[\s\S]*?<\/nav>/gi)];
+  navMatches.forEach(match => menuHtmlBlocks.push(match[0]));
+
+  const headerMatches = [...html.matchAll(/<header[\s\S]*?<\/header>/gi)];
+  headerMatches.forEach(match => menuHtmlBlocks.push(match[0]));
+
+  const roleNavigationMatches = [...html.matchAll(/<[^>]+role=(["'])navigation\1[\s\S]*?<\/[^>]+>/gi)];
+  roleNavigationMatches.forEach(match => menuHtmlBlocks.push(match[0]));
+
+  const combinedMenuHtml = menuHtmlBlocks.join("\n");
+
+  let menuLinks = [];
+
+  if (combinedMenuHtml.trim()) {
+    const menuLinkMatches = [...combinedMenuHtml.matchAll(/<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/gi)];
+
+    menuLinkMatches.forEach(match => {
+      const href = match[2];
+
+      if (shouldIgnoreHref(href)) return;
+
+      try {
+        const absoluteUrl = new URL(href, pageUrl);
+
+        if (absoluteUrl.hostname === rootHostname) {
+          menuLinks.push(normalizeUrl(absoluteUrl.href));
+        }
+      } catch {
+        // Ignore invalid href values
+      }
+    });
+  }
+
+  menuLinks = [...new Set(menuLinks)]
+    .filter(link => link !== normalizeUrl(pageUrl))
+    .filter(link => !isLikelyUtilityLink(link));
+
+  /*
+    If the website does not use semantic <nav> or <header> markup,
+    fall back to the first few internal links. This keeps Audiiance usable
+    on simple or poorly marked-up sites.
+  */
+  if (!menuLinks.length) {
+    menuLinks = fallbackLinks
+      .filter(link => link !== normalizeUrl(pageUrl))
+      .filter(link => !isLikelyUtilityLink(link))
+      .slice(0, 10);
+  }
+
+  return menuLinks;
+}
+
+function shouldIgnoreHref(href) {
+  return (
+    !href ||
+    href.startsWith("#") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:") ||
+    href.startsWith("javascript:")
+  );
+}
+
+function isLikelyUtilityLink(rawUrl) {
+  const value = rawUrl.toLowerCase();
+
+  return (
+    value.includes("/privacy") ||
+    value.includes("/terms") ||
+    value.includes("/cookie") ||
+    value.includes("/cookies") ||
+    value.includes("/login") ||
+    value.includes("/signin") ||
+    value.includes("/sign-in") ||
+    value.includes("/account") ||
+    value.includes("/wp-admin") ||
+    value.includes("/feed") ||
+    value.includes("?") ||
+    value.includes("#")
+  );
 }
 
 function diagnosePage(page) {
@@ -273,6 +364,8 @@ function calculatePriorityScore(page) {
   if (page.pageType === "Thank You Page") score += 16;
   if (page.pageType === "Homepage") score += 14;
   if (page.pageType === "Content Page") score += 8;
+  if (page.pageType === "Solution Page") score += 12;
+  if (page.pageType === "Service Page") score += 12;
 
   if (page.statusCode >= 500) score += 20;
   else if (page.statusCode >= 400) score += 15;
@@ -426,7 +519,7 @@ function buildSummary(pages, edges, priorityQueue, maxDepth) {
     totalPages: pages.length,
     totalEdges: edges.length,
     crawlLayers: maxDepth + 1,
-    seedPages: pages.filter(page => page.crawlDepth === 0).length,
+    seedUrls: pages.filter(page => page.crawlDepth === 0).length,
     firstInteraction: pages.filter(page => page.crawlDepth === 1).length,
     secondInteraction: pages.filter(page => page.crawlDepth === 2).length,
     thirdInteraction: pages.filter(page => page.crawlDepth === 3).length,
