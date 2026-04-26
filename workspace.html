@@ -439,7 +439,7 @@
   <div class="loading" id="loadingScreen">
     <div>
       <h1>Action Board Started</h1>
-      <p id="loadingText">Mapping pages, diagnostics, and priority actions...</p>
+      <p id="loadingText">Mapping menu, pages, diagnostics, and priority actions...</p>
     </div>
   </div>
 
@@ -557,7 +557,7 @@
     if (!submittedUrl) {
       showError("No URL was provided. Go back and enter a website URL.");
     } else {
-      document.getElementById("loadingText").innerText = "Crawling and prioritising: " + submittedUrl;
+      document.getElementById("loadingText").innerText = "Crawling menu-first sitemap: " + submittedUrl;
       runCrawl(submittedUrl);
     }
 
@@ -809,7 +809,7 @@
         svg.appendChild(path);
       });
 
-      pages.forEach((page, index) => {
+      pages.forEach(page => {
         const position = positions[page.url];
         if (!position) return;
 
@@ -825,7 +825,7 @@
         node.setAttribute("data-url", page.url);
 
         node.innerHTML = `
-          <h3>${position.depth === 0 ? "Seed Page" : getPathName(page.url)}</h3>
+          <h3>${position.depth === 0 ? "Seed URL" : getPathName(page.url)}</h3>
           <p>${page.url}</p>
           <div class="node-meta">
             <span class="badge ${getDiagnosisClass(page.diagnosis)}">${page.diagnosis}</span>
@@ -982,13 +982,6 @@
         assignDepth(url);
       });
 
-      /*
-        Important:
-        If a page is deeper than layer 3 because of a long URL path,
-        it still stays in the 3rd Interaction column.
-        This keeps the visual system to 4 layers:
-        Seed Page -> 1st Interaction -> 2nd Interaction -> 3rd Interaction.
-      */
       pageUrls.forEach(url => {
         depthMap[url] = Math.min(depthMap[url], 3);
       });
@@ -1069,7 +1062,7 @@
         if (!firstNodeInColumn) continue;
 
         let label = "3rd Interaction";
-        if (depth === 0) label = "Seed Page";
+        if (depth === 0) label = "Seed URL";
         if (depth === 1) label = "1st Interaction";
         if (depth === 2) label = "2nd Interaction";
         if (depth === 3) label = "3rd Interaction";
@@ -1298,10 +1291,11 @@
       report += "Website: " + crawlData.crawledUrl + "\n";
       report += "Pages Crawled: " + crawlData.pagesCrawled + "\n";
       report += "Crawl Layers: 4\n";
-      report += "Layer 1: Seed Page\n";
-      report += "Layer 2: 1st Interaction\n";
+      report += "Layer 1: Seed URL\n";
+      report += "Layer 2: 1st Interaction - top menu/header navigation\n";
       report += "Layer 3: 2nd Interaction\n";
       report += "Layer 4: 3rd Interaction\n";
+      report += "Menu Links Found: " + (crawlData.menuLinksFound || 0) + "\n";
       report += "Connections Mapped: " + crawlData.edges.length + "\n";
       report += "Generated: " + new Date().toLocaleString() + "\n\n";
 
@@ -1338,11 +1332,13 @@
         report += index + 1 + ". " + page.url + "\n";
         report += "Title: " + page.title + "\n";
         report += "Type: " + page.pageType + "\n";
+        report += "Crawl Depth: " + page.crawlDepth + "\n";
         report += "Diagnosis: " + page.diagnosis + "\n";
         report += "Priority: " + page.priorityScore + "/100 - " + page.priorityLevel + "\n";
         report += "Issue: " + page.issue + "\n";
         report += "Recommendation: " + page.recommendation + "\n";
         report += "Suggested Event: " + page.suggestedEvent + "\n";
+        report += "Menu Links: " + (page.menuLinks ? page.menuLinks.length : 0) + "\n";
         report += "Outbound Links: " + page.links.length + "\n\n";
       });
 
