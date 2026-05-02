@@ -1,1 +1,999 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Audiiance - Funnel Builder</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    button,
+    input,
+    select {
+      font-family: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .screen {
+      min-height: 100vh;
+      padding: 32px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 36px;
+    }
+
+    h2 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+    }
+
+    p {
+      margin: 0;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-weight: bold;
+    }
+
+    .button.primary {
+      background: #22d3ee;
+      color: #0f172a;
+    }
+
+    .button.secondary {
+      background: #111827;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .summary-card h3 {
+      margin: 0 0 10px 0;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: normal;
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 30px;
+    }
+
+    .builder-panel,
+    .connections-panel {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 22px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .builder-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .connection-hint {
+      margin-top: 8px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .canvas-wrap {
+      border-radius: 18px;
+      border: 1px solid #1f2937;
+      overflow: auto;
+      background: #0f172a;
+    }
+
+    .canvas {
+      position: relative;
+      min-width: 1500px;
+      min-height: 760px;
+      background:
+        radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.15) 1px, transparent 0);
+      background-size: 28px 28px;
+    }
+
+    svg {
+      position: absolute;
+      inset: 0;
+      width: 2200px;
+      height: 1600px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .connection-path {
+      fill: none;
+      stroke: rgba(34, 211, 238, 0.68);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .connection-path.active {
+      stroke: rgba(34, 211, 238, 1);
+      stroke-width: 7;
+    }
+
+    .funnel-card {
+      position: absolute;
+      width: 300px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 16px;
+      z-index: 2;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
+    }
+
+    .funnel-card:hover {
+      border-color: #22d3ee;
+    }
+
+    .funnel-card.active-source {
+      border-color: #22d3ee;
+      box-shadow: 0 0 0 2px #22d3ee;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+      cursor: grab;
+    }
+
+    .card-header:active {
+      cursor: grabbing;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      color: #94a3b8;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: #22d3ee;
+    }
+
+    .delete-button {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.14);
+      color: #fca5a5;
+      font-size: 22px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .crawl-button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      background: #22d3ee;
+      color: #0f172a;
+      font-weight: bold;
+      padding: 11px 14px;
+      margin-bottom: 12px;
+    }
+
+    .crawl-button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .card-data {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .data-row {
+      margin-bottom: 10px;
+    }
+
+    .data-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .data-row span {
+      display: block;
+      color: #94a3b8;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .data-row strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 6px;
+      margin-top: 6px;
+    }
+
+    .badge.ok {
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+    }
+
+    .badge.warning {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fcd34d;
+    }
+
+    .badge.error {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+    }
+
+    .error-text {
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .connection-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .connection-actions button {
+      background: #111827;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 10px;
+      font-weight: bold;
+    }
+
+    .connection-actions button:hover {
+      border-color: #22d3ee;
+      color: white;
+    }
+
+    .connection-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .connection-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .connection-row span {
+      color: #e5e7eb;
+      line-height: 1.4;
+    }
+
+    .connection-row button {
+      background: rgba(239, 68, 68, 0.14);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 1000px) {
+      .screen {
+        padding: 20px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar,
+      .builder-header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="screen">
+    <div class="topbar">
+      <div>
+        <h1>Audiiance Funnel Builder</h1>
+        <p>Build a visual funnel, connect journey steps, crawl each URL, and map GA4 events.</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="button primary" onclick="addCard()">+ Add Card</button>
+        <button class="button secondary" onclick="resetDemo()">Reset Demo</button>
+        <button class="button secondary" onclick="window.location.href='/'">Home</button>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <h3>Funnel Cards</h3>
+        <strong id="cardCount">0</strong>
+      </div>
+
+      <div class="summary-card">
+        <h3>Connections</h3>
+        <strong id="connectionCount">0</strong>
+      </div>
+
+      <div class="summary-card">
+        <h3>Crawled URLs</h3>
+        <strong id="crawledCount">0</strong>
+      </div>
+
+      <div class="summary-card">
+        <h3>GA4 Events</h3>
+        <strong id="eventCount">0</strong>
+      </div>
+    </div>
+
+    <div class="builder-panel">
+      <div class="builder-header">
+        <div>
+          <h2>Visual Funnel Canvas</h2>
+          <p>Drag cards, connect them, then crawl each card URL individually.</p>
+          <div class="connection-hint" id="connectionHint">
+            Click Connect on a card, then Target on another card.
+          </div>
+        </div>
+
+        <button class="button secondary" onclick="cancelConnection()">Cancel Connection</button>
+      </div>
+
+      <div class="canvas-wrap">
+        <div
+          class="canvas"
+          id="canvas"
+          onmousemove="onCanvasMouseMove(event)"
+          onmouseup="stopDrag()"
+          onmouseleave="stopDrag()"
+        >
+          <svg id="connectionSvg"></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="connections-panel">
+      <h2>Funnel Connections</h2>
+      <p>These are the journeys you have manually defined.</p>
+      <div class="connection-list" id="connectionList"></div>
+    </div>
+  </div>
+
+  <script>
+    const GA4_EVENTS = [
+      "page_view",
+      "view_item",
+      "view_item_list",
+      "select_item",
+      "add_to_cart",
+      "view_cart",
+      "begin_checkout",
+      "add_payment_info",
+      "purchase",
+      "generate_lead",
+      "sign_up",
+      "login",
+      "search",
+      "contact",
+      "book_appointment",
+      "file_download",
+      "view_pricing",
+      "request_demo"
+    ];
+
+    const STARTER_CARDS = [
+      {
+        id: "card-home",
+        name: "Home Page",
+        url: "",
+        x: 70,
+        y: 220,
+        title: "",
+        statusCode: null,
+        status: "",
+        internalLinksCount: null,
+        suggestedEvent: "page_view",
+        selectedEvent: "page_view",
+        isLoading: false,
+        error: ""
+      },
+      {
+        id: "card-product",
+        name: "Product Page",
+        url: "",
+        x: 440,
+        y: 160,
+        title: "",
+        statusCode: null,
+        status: "",
+        internalLinksCount: null,
+        suggestedEvent: "view_item",
+        selectedEvent: "view_item",
+        isLoading: false,
+        error: ""
+      },
+      {
+        id: "card-cart",
+        name: "Add to Cart",
+        url: "",
+        x: 810,
+        y: 160,
+        title: "",
+        statusCode: null,
+        status: "",
+        internalLinksCount: null,
+        suggestedEvent: "add_to_cart",
+        selectedEvent: "add_to_cart",
+        isLoading: false,
+        error: ""
+      },
+      {
+        id: "card-checkout",
+        name: "Checkout",
+        url: "",
+        x: 1180,
+        y: 160,
+        title: "",
+        statusCode: null,
+        status: "",
+        internalLinksCount: null,
+        suggestedEvent: "begin_checkout",
+        selectedEvent: "begin_checkout",
+        isLoading: false,
+        error: ""
+      }
+    ];
+
+    const STARTER_CONNECTIONS = [
+      {
+        id: "connection-home-product",
+        from: "card-home",
+        to: "card-product"
+      },
+      {
+        id: "connection-product-cart",
+        from: "card-product",
+        to: "card-cart"
+      },
+      {
+        id: "connection-cart-checkout",
+        from: "card-cart",
+        to: "card-checkout"
+      }
+    ];
+
+    let cards = JSON.parse(JSON.stringify(STARTER_CARDS));
+    let connections = JSON.parse(JSON.stringify(STARTER_CONNECTIONS));
+    let dragState = null;
+    let connectingFrom = null;
+
+    render();
+
+    function render() {
+      renderSummary();
+      renderConnectionHint();
+      renderCards();
+      renderConnections();
+      renderConnectionList();
+    }
+
+    function renderSummary() {
+      document.getElementById("cardCount").innerText = cards.length;
+      document.getElementById("connectionCount").innerText = connections.length;
+      document.getElementById("crawledCount").innerText = cards.filter(card => card.statusCode !== null).length;
+      document.getElementById("eventCount").innerText = new Set(cards.map(card => card.selectedEvent)).size;
+    }
+
+    function renderConnectionHint() {
+      const hint = document.getElementById("connectionHint");
+
+      if (!connectingFrom) {
+        hint.innerText = "Click Connect on a card, then Target on another card.";
+        return;
+      }
+
+      const card = cards.find(item => item.id === connectingFrom);
+      hint.innerText = "Connecting from: " + (card ? card.name : "Selected card") + ". Click Target on another card.";
+    }
+
+    function renderCards() {
+      const canvas = document.getElementById("canvas");
+
+      canvas.querySelectorAll(".funnel-card").forEach(card => card.remove());
+
+      cards.forEach(card => {
+        const node = document.createElement("article");
+        node.className = "funnel-card" + (connectingFrom === card.id ? " active-source" : "");
+        node.style.left = card.x + "px";
+        node.style.top = card.y + "px";
+        node.setAttribute("data-card-id", card.id);
+
+        node.innerHTML = `
+          <div class="card-header" onmousedown="startDrag(event, '${card.id}')">
+            <div class="field" style="margin-bottom:0; flex:1;">
+              <label>Step Name</label>
+              <input
+                value="${escapeHtml(card.name)}"
+                onmousedown="event.stopPropagation()"
+                oninput="updateCard('${card.id}', { name: this.value })"
+              />
+            </div>
+
+            <button class="delete-button" onclick="deleteCard('${card.id}')" onmousedown="event.stopPropagation()">×</button>
+          </div>
+
+          <div class="field">
+            <label>Page URL</label>
+            <input
+              value="${escapeHtml(card.url)}"
+              placeholder="https://example.com/page"
+              oninput="updateCard('${card.id}', { url: this.value })"
+            />
+          </div>
+
+          <button class="crawl-button" onclick="crawlCard('${card.id}')" ${card.isLoading ? "disabled" : ""}>
+            ${card.isLoading ? "Crawling..." : "Crawl URL"}
+          </button>
+
+          ${card.error ? `<div class="error-text">${escapeHtml(card.error)}</div>` : ""}
+
+          <div class="card-data">
+            <div class="data-row">
+              <span>Title</span>
+              <strong>${escapeHtml(card.title || "Not crawled yet")}</strong>
+            </div>
+
+            <div class="mini-grid">
+              <div class="data-row">
+                <span>Status</span>
+                <strong>${card.statusCode || "--"}</strong>
+              </div>
+
+              <div class="data-row">
+                <span>Internal Links</span>
+                <strong>${card.internalLinksCount === null ? "--" : card.internalLinksCount}</strong>
+              </div>
+            </div>
+
+            <div>
+              ${getStatusBadge(card)}
+            </div>
+          </div>
+
+          <div class="field">
+            <label>GA4 Event</label>
+            <select onchange="updateCard('${card.id}', { selectedEvent: this.value })">
+              ${GA4_EVENTS.map(eventName => `
+                <option value="${eventName}" ${card.selectedEvent === eventName ? "selected" : ""}>
+                  ${eventName}
+                </option>
+              `).join("")}
+            </select>
+          </div>
+
+          <div class="connection-actions">
+            <button onclick="startConnection('${card.id}')">Connect</button>
+            <button onclick="completeConnection('${card.id}')">Target</button>
+          </div>
+        `;
+
+        canvas.appendChild(node);
+      });
+    }
+
+    function renderConnections() {
+      const svg = document.getElementById("connectionSvg");
+      svg.innerHTML = "";
+
+      connections.forEach(connection => {
+        const fromCard = cards.find(card => card.id === connection.from);
+        const toCard = cards.find(card => card.id === connection.to);
+
+        if (!fromCard || !toCard) return;
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+        const startX = fromCard.x + 300;
+        const startY = fromCard.y + 170;
+        const endX = toCard.x;
+        const endY = toCard.y + 170;
+
+        const distance = Math.max(120, endX - startX);
+        const curve = Math.min(180, distance * 0.5);
+
+        const d = `
+          M ${startX} ${startY}
+          C ${startX + curve} ${startY},
+            ${endX - curve} ${endY},
+            ${endX} ${endY}
+        `;
+
+        path.setAttribute("d", d.trim());
+        path.setAttribute("class", "connection-path");
+
+        svg.appendChild(path);
+      });
+    }
+
+    function renderConnectionList() {
+      const list = document.getElementById("connectionList");
+      list.innerHTML = "";
+
+      if (!connections.length) {
+        list.innerHTML = `<p>No connections yet. Click Connect on one card, then Target on another.</p>`;
+        return;
+      }
+
+      connections.forEach(connection => {
+        const fromCard = cards.find(card => card.id === connection.from);
+        const toCard = cards.find(card => card.id === connection.to);
+
+        const row = document.createElement("div");
+        row.className = "connection-row";
+
+        row.innerHTML = `
+          <span>${escapeHtml(fromCard ? fromCard.name : "Unknown")} → ${escapeHtml(toCard ? toCard.name : "Unknown")}</span>
+          <button onclick="deleteConnection('${connection.id}')">Remove</button>
+        `;
+
+        list.appendChild(row);
+      });
+    }
+
+    function addCard() {
+      const index = cards.length + 1;
+
+      cards.push({
+        id: "card-" + Date.now(),
+        name: "Funnel Step " + index,
+        url: "",
+        x: 80 + (cards.length % 4) * 370,
+        y: 470 + Math.floor(cards.length / 4) * 280,
+        title: "",
+        statusCode: null,
+        status: "",
+        internalLinksCount: null,
+        suggestedEvent: "page_view",
+        selectedEvent: "page_view",
+        isLoading: false,
+        error: ""
+      });
+
+      render();
+    }
+
+    function deleteCard(cardId) {
+      cards = cards.filter(card => card.id !== cardId);
+      connections = connections.filter(connection => connection.from !== cardId && connection.to !== cardId);
+
+      if (connectingFrom === cardId) {
+        connectingFrom = null;
+      }
+
+      render();
+    }
+
+    function updateCard(cardId, updates) {
+      cards = cards.map(card => {
+        if (card.id !== cardId) return card;
+        return { ...card, ...updates };
+      });
+
+      render();
+    }
+
+    async function crawlCard(cardId) {
+      const card = cards.find(item => item.id === cardId);
+
+      if (!card) return;
+
+      if (!card.url.trim()) {
+        updateCard(cardId, {
+          error: "Please enter a URL first."
+        });
+        return;
+      }
+
+      updateCard(cardId, {
+        isLoading: true,
+        error: ""
+      });
+
+      try {
+        const response = await fetch("/api/crawl-card?url=" + encodeURIComponent(card.url.trim()));
+        const data = await response.json();
+
+        if (!response.ok) {
+          updateCard(cardId, {
+            isLoading: false,
+            error: data.error || "Could not crawl this URL."
+          });
+          return;
+        }
+
+        const suggestedEvent = suggestGA4Event(card.name, data.url, data.suggestedEvent);
+
+        updateCard(cardId, {
+          url: data.url,
+          title: data.title,
+          statusCode: data.statusCode,
+          status: data.status,
+          internalLinksCount: data.internalLinksCount,
+          suggestedEvent,
+          selectedEvent: suggestedEvent,
+          isLoading: false,
+          error: ""
+        });
+      } catch {
+        updateCard(cardId, {
+          isLoading: false,
+          error: "Something went wrong while crawling this URL."
+        });
+      }
+    }
+
+    function startDrag(event, cardId) {
+      const card = cards.find(item => item.id === cardId);
+      if (!card) return;
+
+      const canvas = document.getElementById("canvas");
+      const canvasRect = canvas.getBoundingClientRect();
+
+      dragState = {
+        cardId,
+        offsetX: event.clientX - canvasRect.left + canvas.scrollLeft - card.x,
+        offsetY: event.clientY - canvasRect.top + canvas.scrollTop - card.y
+      };
+    }
+
+    function onCanvasMouseMove(event) {
+      if (!dragState) return;
+
+      const canvas = document.getElementById("canvas");
+      const canvasRect = canvas.getBoundingClientRect();
+
+      const nextX = event.clientX - canvasRect.left + canvas.scrollLeft - dragState.offsetX;
+      const nextY = event.clientY - canvasRect.top + canvas.scrollTop - dragState.offsetY;
+
+      cards = cards.map(card => {
+        if (card.id !== dragState.cardId) return card;
+
+        return {
+          ...card,
+          x: Math.max(24, nextX),
+          y: Math.max(24, nextY)
+        };
+      });
+
+      renderCards();
+      renderConnections();
+    }
+
+    function stopDrag() {
+      dragState = null;
+    }
+
+    function startConnection(cardId) {
+      connectingFrom = cardId;
+      render();
+    }
+
+    function completeConnection(targetCardId) {
+      if (!connectingFrom) return;
+
+      if (connectingFrom === targetCardId) {
+        connectingFrom = null;
+        render();
+        return;
+      }
+
+      const alreadyExists = connections.some(connection =>
+        connection.from === connectingFrom && connection.to === targetCardId
+      );
+
+      if (!alreadyExists) {
+        connections.push({
+          id: "connection-" + Date.now(),
+          from: connectingFrom,
+          to: targetCardId
+        });
+      }
+
+      connectingFrom = null;
+      render();
+    }
+
+    function cancelConnection() {
+      connectingFrom = null;
+      render();
+    }
+
+    function deleteConnection(connectionId) {
+      connections = connections.filter(connection => connection.id !== connectionId);
+      render();
+    }
+
+    function resetDemo() {
+      cards = JSON.parse(JSON.stringify(STARTER_CARDS));
+      connections = JSON.parse(JSON.stringify(STARTER_CONNECTIONS));
+      connectingFrom = null;
+      dragState = null;
+      render();
+    }
+
+    function getStatusBadge(card) {
+      if (!card.statusCode) {
+        return `<span class="badge warning">Not crawled</span>`;
+      }
+
+      if (card.statusCode >= 400) {
+        return `<span class="badge error">Issue detected</span>`;
+      }
+
+      return `<span class="badge ok">Detected</span>`;
+    }
+
+    function suggestGA4Event(cardName, rawUrl, apiSuggestion) {
+      const value = `${cardName || ""} ${rawUrl || ""}`.toLowerCase();
+
+      if (value.includes("order") || value.includes("confirmation") || value.includes("thank")) {
+        return "purchase";
+      }
+
+      if (value.includes("checkout")) {
+        return "begin_checkout";
+      }
+
+      if (value.includes("cart") || value.includes("add-to-cart") || value.includes("add_to_cart")) {
+        return "add_to_cart";
+      }
+
+      if (value.includes("pricing")) {
+        return "view_pricing";
+      }
+
+      if (value.includes("demo")) {
+        return "request_demo";
+      }
+
+      if (value.includes("contact") || value.includes("lead") || value.includes("book")) {
+        return "generate_lead";
+      }
+
+      if (value.includes("product") || value.includes("item")) {
+        return "view_item";
+      }
+
+      if (value.includes("search")) {
+        return "search";
+      }
+
+      if (value.includes("signup") || value.includes("sign-up") || value.includes("register")) {
+        return "sign_up";
+      }
+
+      if (value.includes("login") || value.includes("sign-in")) {
+        return "login";
+      }
+
+      return apiSuggestion || "page_view";
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
