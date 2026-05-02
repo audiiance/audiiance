@@ -4,62 +4,179 @@
   <title>Audiiance</title>
   <style>
     body {
+      margin: 0;
       background: #0f172a;
       color: white;
-      font-family: Arial;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
       display: flex;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
+      justify-content: center;
     }
-    .box {
+
+    .screen {
+      width: 100%;
+      max-width: 980px;
+      padding: 32px;
+      box-sizing: border-box;
       text-align: center;
     }
-    input {
-      padding: 12px;
-      width: 300px;
-      border-radius: 8px;
-      border: none;
-      margin-top: 10px;
+
+    .hero {
+      margin-bottom: 32px;
     }
-    button {
-      padding: 12px 20px;
-      margin-top: 10px;
-      background: #22d3ee;
+
+    h1 {
+      font-size: 56px;
+      margin: 0 0 14px 0;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 18px;
+      line-height: 1.6;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 34px;
+      text-align: left;
+    }
+
+    .mode-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 24px;
+      padding: 26px;
+    }
+
+    .mode-card.primary {
+      border-color: rgba(34, 211, 238, 0.7);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
+    }
+
+    .mode-card h2 {
+      margin: 0 0 10px 0;
+      font-size: 26px;
+    }
+
+    .mode-card p {
+      color: #94a3b8;
+      line-height: 1.6;
+      margin: 0 0 20px 0;
+    }
+
+    .button {
+      display: inline-block;
+      text-decoration: none;
       border: none;
-      border-radius: 8px;
+      border-radius: 14px;
+      padding: 13px 18px;
+      font-weight: bold;
       cursor: pointer;
+    }
+
+    .button.primary {
+      background: #22d3ee;
+      color: #0f172a;
+    }
+
+    .button.secondary {
+      background: #0f172a;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+
+    .crawler-box {
+      margin-top: 16px;
+    }
+
+    input {
+      width: 100%;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 13px 14px;
+      outline: none;
+      box-sizing: border-box;
+      margin-bottom: 12px;
+    }
+
+    input:focus {
+      border-color: #22d3ee;
+    }
+
+    .small-note {
+      margin-top: 28px;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 850px) {
+      .mode-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
     }
   </style>
 </head>
 
 <body>
-  <div class="box">
-    <h1>Audiiance</h1>
-    <p>Enter a website URL</p>
+  <main class="screen">
+    <section class="hero">
+      <h1>Audiiance</h1>
+      <p class="subtitle">
+        Build visual website journeys, map funnel steps, crawl individual URLs, and prepare GA4 tracking events with more control.
+      </p>
+    </section>
 
-    <input id="urlInput" placeholder="https://example.com" />
-    <br/>
+    <section class="mode-grid">
+      <div class="mode-card primary">
+        <h2>Visual Funnel Builder</h2>
+        <p>
+          Create cards, connect funnel steps, enter URLs, crawl each page, and map suggested GA4 events.
+        </p>
 
-    <button onclick="startAnalysis()">Build Blueprint</button>
-  </div>
+        <a class="button primary" href="/funnel.html">Open Funnel Builder</a>
+      </div>
+
+      <div class="mode-card">
+        <h2>Diagnostic Sitemap</h2>
+        <p>
+          Run the existing crawler-first sitemap system. This is still useful for broader website discovery.
+        </p>
+
+        <div class="crawler-box">
+          <input id="urlInput" placeholder="https://example.com" />
+          <button class="button secondary" onclick="startSitemapCrawl()">Run Sitemap Crawl</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="small-note">
+      Recommended MVP flow: start with the Funnel Builder. The crawler now supports the canvas instead of controlling the whole product.
+    </p>
+  </main>
 
   <script>
-    function startAnalysis() {
-      const input = document.getElementById("urlInput").value;
+    function startSitemapCrawl() {
+      const input = document.getElementById("urlInput").value.trim();
 
       if (!input) {
-        alert("Please enter a URL");
+        alert("Please enter a website URL.");
         return;
       }
 
-      const button = document.querySelector("button");
-      button.innerText = "Analyzing...";
-      button.disabled = true;
-
-      setTimeout(() => {
-        window.location.href = "/workspace.html?url=" + encodeURIComponent(input);
-      }, 1500);
+      window.location.href = "/workspace.html?url=" + encodeURIComponent(input);
     }
   </script>
 </body>
